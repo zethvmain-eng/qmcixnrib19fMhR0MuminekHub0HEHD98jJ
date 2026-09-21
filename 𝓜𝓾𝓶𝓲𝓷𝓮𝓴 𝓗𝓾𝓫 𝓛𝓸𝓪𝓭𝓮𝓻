@@ -1,0 +1,558 @@
+-- =======================================================
+--     Muminek Loader | Particles | Animation |Smooth
+-- =======================================================
+ 
+-- -----------------------------------------
+--             AntiBan
+-- -----------------------------------------
+ 
+local function LaunchUniversalEmergencyExit()
+    local Players = game:GetService("Players")
+    local TeleportService = game:GetService("TeleportService")
+    local GuiService = game:GetService("GuiService")
+    local Stats = game:GetService("Stats")
+    local LocalPlayer = Players.LocalPlayer
+ 
+    local function EMERGENCY_LEAVE(reason)
+        task.spawn(function()
+            LocalPlayer:Kick("\n [BAN DETECTED]\nReason: " .. tostring(reason))
+        end)
+ 
+        pcall(function() 
+            Stats:ClearAllChildren()
+            settings().Network.IncomingReplicationLag = 1000
+        end)
+ 
+        task.delay(0.1, function()
+            pcall(function() game:Shutdown() end)
+        end)
+        
+        task.delay(0.5, function()
+            while true do end
+        end)
+    end
+ 
+    local mt = getrawmetatable(game)
+    local oldNamecall = mt.__namecall
+    local oldIndex = mt.__index
+    local oldNewIndex = mt.__newindex
+    setreadonly(mt, false)
+ 
+    mt.__namecall = newcclosure(function(self, ...)
+        local method = getnamecallmethod()
+        if not checkcaller() then
+            if method == "Kick" or method == "kick" or (method == "Destroy" and self == LocalPlayer) then
+                EMERGENCY_LEAVE("TERMINATION_ATTEMPT")
+                return nil
+            end
+ 
+            if method == "FireServer" or method == "InvokeServer" then
+                local rName = tostring(self):lower()
+                if rName:match("ban") or rName:match("ac") or rName:match("det") or rName:match("flag") or rName:match("report") then
+                    if rName:find("speed") or rName:find("walk") then 
+                        return nil 
+                    end
+                    EMERGENCY_LEAVE("REMOTE_EVENT")
+                    return nil
+                end
+            end
+        end
+        return oldNamecall(self, ...)
+    end)
+ 
+    mt.__index = newcclosure(function(self, key)
+        if not checkcaller() then
+            if key == "WalkSpeed" and self:IsA("Humanoid") then return 16 end
+            if key == "JumpPower" and self:IsA("Humanoid") then return 50 end
+            if key == "Parent" and self == LocalPlayer then return game.Players end
+        end
+        return oldIndex(self, key)
+    end)
+ 
+    mt.__newindex = newcclosure(function(self, key, val)
+        if not checkcaller() and self:IsA("Humanoid") and key == "WalkSpeed" and val > 20 then
+            return oldNewIndex(self, key, 16)
+        end
+        return oldNewIndex(self, key, val)
+    end)
+ 
+    setreadonly(mt, true)
+ 
+    if getconnections then
+        local signals = {game:GetService("ScriptContext").Error, LocalPlayer.Idled, game:GetService("LogService").MessageOut}
+        for _, sig in pairs(signals) do 
+            pcall(function() for _, v in pairs(getconnections(sig)) do v:Disable() end end) 
+        end
+    end
+    
+    pcall(function()
+        GuiService.ErrorMessageChanged:Connect(function()
+            EMERGENCY_LEAVE("GUI_ERROR")
+        end)
+    end)
+ 
+    print("Anti Ban Kick...")
+end
+ 
+pcall(LaunchUniversalEmergencyExit)
+ 
+-- Standardowe wiadomości tekstowe
+print("--- Konsola Anti Ban ---")
+print("Wszystko Dziala Good .")
+print("Zostaniesz wyzucony z gry gdy roblox strubuje dac ci bana .")
+ 
+local TweenService = game:GetService("TweenService")
+local CoreGui = game:GetService("CoreGui")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+ 
+local AccentColor = Color3.fromRGB(0, 148, 255)
+local SuccessColor = Color3.fromRGB(0, 255, 130)
+local ErrorColor = Color3.fromRGB(255, 40, 70)
+local DarkBase = Color3.fromRGB(10, 11, 16)
+ 
+local parentFrame = gethui and gethui() or CoreGui
+if parentFrame:FindFirstChild("NeverLoseHyperLoader") then
+    parentFrame.NeverLoseHyperLoader:Destroy()
+end
+ 
+local LoaderGui = Instance.new("ScreenGui")
+LoaderGui.Name = "NeverLoseHyperLoader"
+LoaderGui.Parent = parentFrame
+LoaderGui.IgnoreGuiInset = true
+ 
+-- 1. KONTENER GŁÓWNY (Stabilne pozycjonowanie)
+local MainShadow = Instance.new("Frame", LoaderGui)
+MainShadow.Name = "MainShadow"
+MainShadow.AnchorPoint = Vector2.new(0.5, 0.5)
+MainShadow.Size = UDim2.new(0, 0, 0, 0)
+MainShadow.Position = UDim2.new(0.5, 0, 0.5, 0) 
+MainShadow.BackgroundTransparency = 1
+ 
+-- Kontener na cząsteczki wychodzące poza ekran
+local ScreenParticleContainer = Instance.new("Frame", LoaderGui)
+ScreenParticleContainer.Name = "ScreenParticleContainer"
+ScreenParticleContainer.Size = UDim2.new(1, 0, 1, 0)
+ScreenParticleContainer.BackgroundTransparency = 1
+local screenParticles = {}
+ 
+-- 2. WYCENTROWANA POŚWIATA
+local LiquidGlow = Instance.new("ImageLabel", LoaderGui)
+LiquidGlow.Name = "LiquidGlow"
+LiquidGlow.AnchorPoint = Vector2.new(0.5, 0.5)
+LiquidGlow.Position = MainShadow.Position
+LiquidGlow.Size = UDim2.new(0, 0, 0, 0)
+LiquidGlow.BackgroundTransparency = 1
+LiquidGlow.Image = "rbxassetid://5554236805"
+LiquidGlow.ImageColor3 = AccentColor
+LiquidGlow.ImageTransparency = 1
+LiquidGlow.ScaleType = Enum.ScaleType.Slice
+LiquidGlow.SliceCenter = Rect.new(23, 23, 27, 27)
+ 
+-- 3. GŁÓWNA TAFLA INTERFEJSU
+local GlassFrame = Instance.new("Frame", MainShadow)
+GlassFrame.Size = UDim2.new(1, 0, 1, 0)
+GlassFrame.BackgroundColor3 = DarkBase
+GlassFrame.BackgroundTransparency = 1
+GlassFrame.BorderSizePixel = 0
+GlassFrame.ClipsDescendants = true
+ 
+local GlassCorner = Instance.new("UICorner", GlassFrame)
+GlassCorner.CornerRadius = UDim.new(0, 16)
+ 
+local GlassStroke = Instance.new("UIStroke", GlassFrame)
+GlassStroke.Color = Color3.fromRGB(255, 255, 255)
+GlassStroke.Thickness = 1
+GlassStroke.Transparency = 1
+ 
+-- System cząsteczek wewnętrznych tła (Cyber Dust)
+local ParticleContainer = Instance.new("Frame", GlassFrame)
+ParticleContainer.Size = UDim2.new(1, 0, 1, 0)
+ParticleContainer.BackgroundTransparency = 1
+local particles = {}
+local particleSpeedMultiplier = 1
+local globalParticleColor = AccentColor
+ 
+for i = 1, 20 do
+    local p = Instance.new("Frame", ParticleContainer)
+    p.Size = UDim2.fromOffset(math.random(2, 3), math.random(2, 3))
+    p.BackgroundColor3 = AccentColor
+    p.BackgroundTransparency = math.random(60, 85) / 100
+    p.Position = UDim2.new(math.random(), 0, math.random(), 0)
+    Instance.new("UICorner", p).CornerRadius = UDim.new(1, 0)
+    
+    table.insert(particles, {
+        Obj = p,
+        XSpeed = (math.random() - 0.5) * 30,
+        YSpeed = -math.random(15, 35)
+    })
+end
+ 
+-- Funkcja generująca eksplozję cząsteczek WYCHODZĄCYCH poza ekran
+local function SpawnScreenBurst(position, color, count)
+    for i = 1, count do
+        local p = Instance.new("Frame", ScreenParticleContainer)
+        local size = math.random(3, 5)
+        p.Size = UDim2.fromOffset(size, size)
+        p.Position = UDim2.fromOffset(position.X, position.Y)
+        p.BackgroundColor3 = color
+        p.BorderSizePixel = 0
+        Instance.new("UICorner", p).CornerRadius = UDim.new(1, 0)
+        
+        local angle = math.random() * math.pi * 2
+        local speed = math.random(80, 250)
+        
+        table.insert(screenParticles, {
+            Obj = p,
+            XSpeed = math.cos(angle) * speed,
+            YSpeed = math.sin(angle) * speed,
+            Life = 1.0,
+            FadeSpeed = math.random(1, 2)
+        })
+    end
+end
+ 
+-- Ukośny błysk światła (Specular Gleam)
+local GlassGleam = Instance.new("Frame", GlassFrame)
+GlassGleam.Name = "GlassGleam"
+GlassGleam.Size = UDim2.new(0, 80, 2, 0)
+GlassGleam.Position = UDim2.new(-0.4, 0, -0.5, 0)
+GlassGleam.Rotation = 30
+GlassGleam.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+GlassGleam.BackgroundTransparency = 1
+ 
+local UIGradientGleam = Instance.new("UIGradient", GlassGleam)
+UIGradientGleam.Transparency = NumberSequence.new({
+    NumberSequenceKeypoint.new(0, 1),
+    NumberSequenceKeypoint.new(0.5, 0.85),
+    NumberSequenceKeypoint.new(1, 1)
+})
+ 
+local Scanline = Instance.new("Frame", GlassFrame)
+Scanline.Size = UDim2.new(1, 0, 0, 2)
+Scanline.Position = UDim2.new(0, 0, -0.1, 0)
+Scanline.BackgroundColor3 = AccentColor
+Scanline.BackgroundTransparency = 0.93
+ 
+-- =========================================================================
+-- KOMPONENTY INTERFEJSU
+-- =========================================================================
+local Title = Instance.new("TextLabel", GlassFrame)
+Title.Size = UDim2.new(1, 0, 0, 40)
+Title.Position = UDim2.new(0, 0, 0, -40)
+Title.Text = "Muminek Loader"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.TextSize = 18
+Title.Font = Enum.Font.GothamBold
+Title.BackgroundTransparency = 1
+Title.TextTransparency = 1
+ 
+local KeyContainer = Instance.new("Frame", GlassFrame)
+KeyContainer.Size = UDim2.new(1, -60, 0, 42)
+KeyContainer.Position = UDim2.new(0, 30, 1, 50)
+KeyContainer.BackgroundColor3 = Color3.fromRGB(5, 6, 9)
+KeyContainer.BackgroundTransparency = 0.4
+local KC_Corner = Instance.new("UICorner", KeyContainer)
+KC_Corner.CornerRadius = UDim.new(0, 8)
+local KC_Stroke = Instance.new("UIStroke", KeyContainer)
+KC_Stroke.Color = Color3.fromRGB(255, 255, 255)
+KC_Stroke.Transparency = 0.95
+ 
+local KeyInput = Instance.new("TextBox", KeyContainer)
+KeyInput.Size = UDim2.new(1, -20, 1, 0)
+KeyInput.Position = UDim2.new(0, 10, 0, 0)
+KeyInput.BackgroundTransparency = 1
+KeyInput.PlaceholderText = "Wpisz Klucz Licencji..."
+KeyInput.PlaceholderColor3 = Color3.fromRGB(60, 65, 80)
+KeyInput.Text = ""
+KeyInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+KeyInput.Font = Enum.Font.GothamMedium
+KeyInput.TextSize = 12
+ 
+local ActiveLine = Instance.new("Frame", KeyContainer)
+ActiveLine.Size = UDim2.new(0, 0, 0, 1)
+ActiveLine.Position = UDim2.new(0.5, 0, 1, -1)
+ActiveLine.BackgroundColor3 = AccentColor
+ActiveLine.BorderSizePixel = 0
+ 
+local SubmitBtn = Instance.new("TextButton", GlassFrame)
+SubmitBtn.Size = UDim2.new(1, -60, 0, 42)
+SubmitBtn.Position = UDim2.new(0, 30, 1, 100)
+SubmitBtn.BackgroundColor3 = AccentColor
+SubmitBtn.Text = "Wpisz Klucz"
+SubmitBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+SubmitBtn.Font = Enum.Font.GothamBold
+SubmitBtn.TextSize = 13
+SubmitBtn.TextTransparency = 1
+SubmitBtn.ClipsDescendants = true
+ 
+local BtnCorner = Instance.new("UICorner", SubmitBtn)
+BtnCorner.CornerRadius = UDim.new(0, 8)
+ 
+local LoadingSpinner = Instance.new("ImageLabel", SubmitBtn)
+LoadingSpinner.AnchorPoint = Vector2.new(0.5, 0.5)
+LoadingSpinner.Position = UDim2.new(0.5, 0, 0.5, 0)
+LoadingSpinner.Size = UDim2.new(0, 24, 0, 24)
+LoadingSpinner.BackgroundTransparency = 1
+LoadingSpinner.Image = "rbxassetid://11422917633"
+LoadingSpinner.ImageTransparency = 1
+ 
+local StatusLabel = Instance.new("TextLabel", GlassFrame)
+StatusLabel.Size = UDim2.new(1, 0, 0, 20)
+StatusLabel.Position = UDim2.new(0, 0, 0, 194)
+StatusLabel.Text = ""
+StatusLabel.TextColor3 = ErrorColor
+StatusLabel.TextSize = 11
+StatusLabel.Font = Enum.Font.GothamMedium
+StatusLabel.BackgroundTransparency = 1
+ 
+-- =========================================================================
+-- KINEMATYKA STARTOWA
+-- =========================================================================
+task.wait(0.1)
+ 
+local ElasticBounce = TweenInfo.new(0.6, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+local FluidQuint = TweenInfo.new(0.7, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
+ 
+TweenService:Create(MainShadow, ElasticBounce, { Size = UDim2.new(0, 200, 0, 4) }):Play()
+TweenService:Create(GlassFrame, FluidQuint, { BackgroundTransparency = 0.1 }):Play()
+TweenService:Create(GlassStroke, FluidQuint, { Transparency = 0.88 }):Play()
+TweenService:Create(LiquidGlow, FluidQuint, { ImageTransparency = 0.55, Size = UDim2.new(0, 260, 0, 64) }):Play()
+ 
+task.wait(0.25)
+ 
+local CoreExpand = TweenService:Create(MainShadow, FluidQuint, { Size = UDim2.new(0, 350, 0, 230) })
+CoreExpand:Play()
+TweenService:Create(LiquidGlow, FluidQuint, { Size = UDim2.new(0, 420, 0, 300) }):Play()
+CoreExpand.Completed:Wait()
+ 
+TweenService:Create(Title, FluidQuint, { TextTransparency = 0, Position = UDim2.new(0, 0, 0, 24) }):Play()
+task.wait(0.05)
+TweenService:Create(KeyContainer, FluidQuint, { Position = UDim2.new(0, 30, 0, 85) }):Play()
+task.wait(0.05)
+TweenService:Create(SubmitBtn, FluidQuint, { TextTransparency = 0, Position = UDim2.new(0, 30, 0, 142) }):Play()
+ 
+local scanlineTween = TweenService:Create(Scanline, TweenInfo.new(2.5, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, -1), { Position = UDim2.new(0, 0, 1.1, 0) })
+scanlineTween:Play()
+ 
+task.spawn(function()
+    while task.wait(6) do
+        if not LoaderGui or not GlassGleam.Parent then break end
+        GlassGleam.Position = UDim2.new(-0.4, 0, -0.5, 0)
+        TweenService:Create(GlassGleam, TweenInfo.new(1.2, Enum.EasingStyle.Cubic, Enum.EasingDirection.InOut), { Position = UDim2.new(1.4, 0, -0.5, 0) }):Play()
+    end
+end)
+ 
+-- =========================================================================
+-- PRZESUWANIE OKNA
+-- =========================================================================
+local dragging, dragInput, dragStart, startPos = false, nil, nil, nil
+local currentBasePosition = UDim2.new(0.5, 0, 0.5, 0)
+ 
+GlassFrame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = currentBasePosition
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then dragging = false end
+        end)
+    end
+end)
+ 
+GlassFrame.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        dragInput = input
+    end
+end)
+ 
+UserInputService.InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        local delta = input.Position - dragStart
+        currentBasePosition = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
+ 
+-- Fizyka czasu rzeczywistego
+local glowConnection
+glowConnection = RunService.RenderStepped:Connect(function(delta)
+    if LoaderGui and LiquidGlow.Parent then
+        MainShadow.Position = MainShadow.Position:Lerp(currentBasePosition, 1 - math.exp(-15 * delta))
+        LiquidGlow.Position = LiquidGlow.Position:Lerp(MainShadow.Position, 1 - math.exp(-10 * delta))
+        LoadingSpinner.Rotation = (LoadingSpinner.Rotation + (200 * delta)) % 360
+        
+        -- Wewnętrzne cząsteczki
+        for _, p in ipairs(particles) do
+            p.Obj.BackgroundColor3 = p.Obj.BackgroundColor3:Lerp(globalParticleColor, 1 - math.exp(-10 * delta))
+            local currentPos = p.Obj.Position
+            local newX = currentPos.X.Scale + (p.XSpeed * delta * particleSpeedMultiplier) / MainShadow.AbsoluteSize.X
+            local newY = currentPos.Y.Scale + (p.YSpeed * delta * particleSpeedMultiplier) / MainShadow.AbsoluteSize.Y
+            
+            if newY < 0 or newX < 0 or newX > 1 then
+                newY = 1.05
+                newX = math.random()
+            end
+            p.Obj.Position = UDim2.new(newX, 0, newY, 0)
+        end
+        
+        -- Zewnętrzne cząsteczki wychodzące poza ekran
+        for i = #screenParticles, 1, -1 do
+            local p = screenParticles[i]
+            p.Life = p.Life - (p.FadeSpeed * delta)
+            if p.Life <= 0 then
+                p.Obj:Destroy()
+                table.remove(screenParticles, i)
+            else
+                p.Obj.BackgroundTransparency = 1 - p.Life
+                p.Obj.Position = UDim2.fromOffset(
+                    p.Obj.Position.X.Offset + (p.XSpeed * delta),
+                    p.Obj.Position.Y.Offset + (p.YSpeed * delta)
+                )
+            end
+        end
+    else
+        glowConnection:Disconnect()
+    end
+end)
+ 
+-- Mikro-interakcje pól
+KeyInput.Focused:Connect(function()
+    particleSpeedMultiplier = 2.5
+    TweenService:Create(ActiveLine, TweenInfo.new(0.35, Enum.EasingStyle.Quart), { Size = UDim2.new(1, 0, 0, 1), Position = UDim2.new(0, 0, 1, -1) }):Play()
+    TweenService:Create(KC_Stroke, TweenInfo.new(0.3), { Color = AccentColor, Transparency = 0.7 }):Play()
+end)
+ 
+KeyInput.FocusLost:Connect(function()
+    particleSpeedMultiplier = 1
+    TweenService:Create(ActiveLine, TweenInfo.new(0.3), { Size = UDim2.new(0, 0, 0, 1), Position = UDim2.new(0.5, 0, 1, -1) }):Play()
+    TweenService:Create(KC_Stroke, TweenInfo.new(0.3), { Color = Color3.fromRGB(255, 255, 255), Transparency = 0.95 }):Play()
+end)
+ 
+SubmitBtn.MouseEnter:Connect(function()
+    particleSpeedMultiplier = 2
+    TweenService:Create(SubmitBtn, TweenInfo.new(0.25), { BackgroundColor3 = Color3.fromRGB(0, 110, 190) }):Play()
+    TweenService:Create(LiquidGlow, TweenInfo.new(0.25), { ImageColor3 = Color3.fromRGB(0, 190, 255), ImageTransparency = 0.4 }):Play()
+end)
+ 
+SubmitBtn.MouseLeave:Connect(function()
+    particleSpeedMultiplier = 1
+    if SubmitBtn.TextTransparency == 0 then
+        TweenService:Create(SubmitBtn, TweenInfo.new(0.25), { BackgroundColor3 = AccentColor }):Play()
+        TweenService:Create(LiquidGlow, TweenInfo.new(0.25), { ImageColor3 = AccentColor, ImageTransparency = 0.55 }):Play()
+    end
+end)
+ 
+-- =========================================================================
+--                     SEKWENCJA AUTORYZACJI
+-- =========================================================================
+
+local function InitiateDecryption(scriptCallback)
+    SubmitBtn.Active = false
+    KeyContainer.Active = false
+    
+    TweenService:Create(SubmitBtn, TweenInfo.new(0.25), { TextTransparency = 1, BackgroundTransparency = 0.5 }):Play()
+    task.wait(0.15)
+    TweenService:Create(LoadingSpinner, TweenInfo.new(0.2), { ImageTransparency = 0 }):Play()
+    
+    task.wait(1.1)
+    
+    particleSpeedMultiplier = 7
+    globalParticleColor = SuccessColor
+    
+    local centerPos = MainShadow.AbsolutePosition + (MainShadow.AbsoluteSize / 2)
+    SpawnScreenBurst(centerPos, SuccessColor, 45) -- Eksplozja sukcesu na cały ekran
+    
+    TweenService:Create(LoadingSpinner, TweenInfo.new(0.15), { ImageTransparency = 1 }):Play()
+    StatusLabel.TextColor3 = SuccessColor
+    StatusLabel.Text = "Poprawny Klucz , zapraszamy"
+    
+    TweenService:Create(SubmitBtn, TweenInfo.new(0.3), { BackgroundColor3 = SuccessColor, BackgroundTransparency = 0 }):Play()
+    TweenService:Create(LiquidGlow, TweenInfo.new(0.4), { ImageColor3 = SuccessColor, ImageTransparency = 0.2 }):Play()
+    TweenService:Create(GlassStroke, TweenInfo.new(0.3), { Color = SuccessColor, Transparency = 0.4 }):Play()
+    
+    task.wait(0.8)
+    
+    scanlineTween:Cancel()
+    TweenService:Create(LiquidGlow, TweenInfo.new(0.25), { ImageTransparency = 1 }):Play()
+    
+    local Collapse = TweenService:Create(MainShadow, TweenInfo.new(0.55, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {
+        Size = UDim2.new(0, 0, 0, 6)
+    })
+    Collapse:Play()
+    
+    local fade = TweenInfo.new(0.2)
+    TweenService:Create(GlassFrame, fade, { BackgroundTransparency = 1 }):Play()
+    TweenService:Create(Title, fade, { TextTransparency = 1 }):Play()
+    TweenService:Create(KeyContainer, fade, { BackgroundTransparency = 1 }):Play()
+    TweenService:Create(KC_Stroke, fade, { Transparency = 1 }):Play()
+    TweenService:Create(KeyInput, fade, { TextTransparency = 1 }):Play()
+    TweenService:Create(SubmitBtn, fade, { BackgroundTransparency = 1 }):Play()
+    TweenService:Create(StatusLabel, fade, { TextTransparency = 1 }):Play()
+    
+    Collapse.Completed:Wait()
+    glowConnection:Disconnect()
+    LoaderGui:Destroy()
+    task.spawn(scriptCallback)
+end
+ 
+SubmitBtn.MouseButton1Click:Connect(function()
+    local key = KeyInput.Text
+    
+        if key == "Admin" then
+        InitiateDecryption(function()
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/ltseverydayyou/Nameless-Admin/main/Source.lua"))()
+        end)
+ 
+        elseif key == "MM2" then
+        InitiateDecryption(function()
+            loadstring(game:HttpGet("https://raw.smokingscripts.org/vertex.lua"))()
+        end)
+ 
+ 
+        elseif key == "Rivals" then
+        InitiateDecryption(function()
+            loadstring(game:HttpGet("loadstring(game:HttpGet("https://rawscripts.net/raw/RIVALS-Uranium-or-Free-Keyless-Script-227118"))()"))()
+        end)
+        
+ 
+        elseif key == "Muminek" then
+        InitiateDecryption(function()
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/zethvmain-eng/qmcixnrib19fMhR0MuminekHub0HEHD98jJ/refs/heads/main/%F0%9D%93%9C%F0%9D%93%BE%F0%9D%93%B6%F0%9D%93%B2%F0%9D%93%B7%F0%9D%93%AE%F0%9D%93%B4%20%F0%9D%93%A4%F0%9D%93%B7%F0%9D%93%B2%F0%9D%93%BF%F0%9D%93%AE%F0%9D%93%BC%F0%9D%93%AA%F0%9D%93%B5"))()
+        end)
+ 
+ 
+        elseif key == "Game" then
+        InitiateDecryption(function()
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/zethvmain-eng/qmcixnrib19fMhR0MuminekHub0HEHD98jJ/refs/heads/main/%F0%9D%93%9C%F0%9D%93%BE%F0%9D%93%B6%F0%9D%93%B2%F0%9D%93%B7%F0%9D%93%AE%F0%9D%93%B4%20%F0%9D%93%96%F0%9D%93%AA%F0%9D%93%B6%F0%9D%93%AE%20%F0%9D%93%93%F0%9D%93%AE%F0%9D%93%BD%F0%9D%93%AE%F0%9D%93%AC%F0%9D%93%BD%F0%9D%93%B8%F0%9D%93%BB"))()
+        end)
+ 
+ 
+    else
+        -- KINETYCZNY BLAD (Chaos Burst)
+        StatusLabel.TextColor3 = ErrorColor
+        StatusLabel.Text = "Zły klucz. Upewnij się, że wpisałeś dużą literę na początku."
+        
+        globalParticleColor = ErrorColor
+        particleSpeedMultiplier = 4
+        
+        local buttonCenter = SubmitBtn.AbsolutePosition + (SubmitBtn.AbsoluteSize / 2)
+        SpawnScreenBurst(buttonCenter, ErrorColor, 25)
+        
+        TweenService:Create(LiquidGlow, TweenInfo.new(0.1), { ImageColor3 = ErrorColor, ImageTransparency = 0.2 }):Play()
+        TweenService:Create(GlassStroke, TweenInfo.new(0.1), { Color = ErrorColor, Thickness = 1.5 }):Play()
+        
+        local currentPos = currentBasePosition
+        for i = 1, 8 do
+            local offset = (i % 2 == 0 and 9 or -9)
+            currentBasePosition = currentPos + UDim2.fromOffset(offset, 0)
+            task.wait(0.03)
+        end
+        
+        currentBasePosition = currentPos
+        particleSpeedMultiplier = 1
+        globalParticleColor = AccentColor
+        
+        TweenService:Create(LiquidGlow, TweenInfo.new(0.4), { ImageColor3 = AccentColor, ImageTransparency = 0.55 }):Play()
+        TweenService:Create(GlassStroke, TweenInfo.new(0.4), { Color = Color3.fromRGB(255, 255, 255), Thickness = 1 }):Play()
+    end
+end)
