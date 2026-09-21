@@ -1,0 +1,82 @@
+-- =========================================================================
+--               MUMINEK HUB - Game Detector
+-- =========================================================================
+ 
+local PlaceId = game.PlaceId
+local GameId = game.GameId
+ 
+-- [1] LINK DO SKRYPTU UNIWERSALNEGO (Jeśli gra nie zostanie wykryta)
+local UniversalScript = "https://raw.githubusercontent.com/zethvmain-eng/qmcixnrib19fMhR0MuminekHub0HEHD98jJ/refs/heads/main/%F0%9D%93%9C%F0%9D%93%BE%F0%9D%93%B6%F0%9D%93%B2%F0%9D%93%B7%F0%9D%93%AE%F0%9D%93%B4%20%F0%9D%93%A4%F0%9D%93%B7%F0%9D%93%B2%F0%9D%93%BF%F0%9D%93%AE%F0%9D%93%BC%F0%9D%93%AA%F0%9D%93%B5"
+ 
+-- [2] BAZA DANYCH GIER (Konfiguracja PlaceId oraz linków do skryptów)
+local GameRoutes = {
+    
+    -- RIVALS
+    ["Rivals"] = {
+        Ids = { 17625359962 },
+        Url = "https://rawscripts.net/raw/RIVALS-Uranium-or-Free-Keyless-Script-227118"
+    },
+    
+    -- BLOX FRUITS
+    ["Blox Fruits"] = {
+        Ids = { 
+            2753915549, -- Sea 1
+            4442272183, -- Sea 2
+            7449423635  -- Sea 3
+        },
+        Url = "https://rawscripts.net/raw/Blox-Fruits-Volcano-Hub-28884"
+    },
+ 
+    -- 99 Nights In the forest
+    ["99 Nights In The Forest"] = {
+    Ids = { 
+        79546208627805,
+        7326934954     
+    },
+    Url = "https://files.vapevoidware.xyz/VapeVoidware/VW-Add/main/loader.lua"
+},
+
+    -- MURDER MYSTERY 2
+    ["Murder Mystery 2"] = {
+        Ids = { 142823291 }, -- Główne PlaceId dla MM2
+        Url = "https://raw.smokingscripts.org/vertex.lua"
+    }
+ 
+}
+ 
+-- =========================================================================
+--                      LOGIKA SZUKANIA I URUCHAMIANIA
+-- =========================================================================
+ 
+local function GetCorrectScript()
+    for gameName, config in pairs(GameRoutes) do
+        for _, id in ipairs(config.Ids) do
+            -- Sprawdzamy zarówno PlaceId (konkretna mapa) jak i GameId (całe uniwersum gry)
+            if PlaceId == id or GameId == id then
+                return config.Url, gameName
+            end
+        end
+    end
+    -- Jeśli pętla nic nie znalazła, zwraca wersję uniwersalną
+    return UniversalScript, "Universal (MuminekHub)"
+end
+ 
+-- Pobieranie właściwego linku oraz nazwy wykrytej gry
+local targetUrl, detectedGame = GetCorrectScript()
+ 
+-- Informacja w konsoli F9 (przydatne do debugowania)
+print("-- ========================================== --")
+print("[Muminek Router] Wykryto gre:   " .. detectedGame)
+print("[Muminek Router] Uruchamianie kodu źródłowego...")
+print("-- ========================================== --")
+ 
+-- Bezpieczne wykonanie skryptu (pcall chroni przed wyrzuceniem błędu w konsoli robloxa)
+local success, err = pcall(function()
+    loadstring(game:HttpGet(targetUrl))()
+end)
+ 
+if not success then
+    warn("[Muminek Router] Fatalny blad podczas ładowania skryptu: " .. tostring(err))
+end
+ 
+-- -~~- ================================================================================== -~~- --
