@@ -1,4 +1,8 @@
-    local MuminekHub = loadstring(game:HttpGet("https://raw.githubusercontent.com/zethvmain-eng/Muminek-Hub/refs/heads/main/Muminek%20Libary%20Deepeek%20Repair"))()
+-- =========================================
+--          Muminek Hub Univesal
+-- =========================================
+
+local MuminekHub = loadstring(game:HttpGet("https://raw.githubusercontent.com/zethvmain-eng/qmcixnrib19fMhR0MuminekHub0HEHD98jJ/refs/heads/main/%F0%9D%93%9C%F0%9D%93%BE%F0%9D%93%B6%F0%9D%93%B2%F0%9D%93%B7%F0%9D%93%AE%F0%9D%93%B4%20%F0%9D%93%9B%F0%9D%93%B2%F0%9D%93%AB%F0%9D%93%AA%F0%9D%93%BB%F0%9D%94%82"))()
 
     -- == Zabezpieczenie == --
     local Logging = (MuminekHub.CreateLogger and MuminekHub:CreateLogger()) or {
