@@ -265,7 +265,7 @@ end
     Excutors:AddLabel('Xeno     | Fuly Working  ', true)
     Excutors:AddLabel('Solara   | Fuly Working  ', true)
     Excutors:AddLabel('Madium   | Fuly Working  ', true)
-    Excutors:AddLabel('JJsploit | Working       ', true)
+    Excutors:AddLabel('Real | Working       ', true)
 
     local Premium = ChangeLog:AddSection({ Name = "Premium Users", Position = 'right' })
 
