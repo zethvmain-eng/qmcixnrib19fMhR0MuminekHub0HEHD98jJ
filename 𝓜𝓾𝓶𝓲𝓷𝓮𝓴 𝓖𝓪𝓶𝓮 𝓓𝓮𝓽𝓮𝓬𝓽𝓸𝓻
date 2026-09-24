@@ -17,11 +17,11 @@ local GameRoutes = {
         Url = "https://rawscripts.net/raw/RIVALS-Uranium-or-Free-Keyless-Script-227118"
     },
 
-    -- Prowadz Kukirina
+    --[[ Prowadz Kukirina
     ["Prowadz Kukirina"] = {
         Ids = { 71704434889758 },
         Url = "https://pastebin.com/raw/iHkvW2Th"
-    },
+    }, --]]
     
     -- BLOX FRUITS
     ["Blox Fruits"] = {
