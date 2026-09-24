@@ -497,61 +497,58 @@ end
  
 SubmitBtn.MouseButton1Click:Connect(function()
     local key = KeyInput.Text
-    
-        if key == "Admin" then
+
+    if key == "Admin" then
         InitiateDecryption(function()
             loadstring(game:HttpGet("https://raw.githubusercontent.com/ltseverydayyou/Nameless-Admin/main/Source.lua"))()
         end)
- 
-        elseif key == "MM2" then
+
+    elseif key == "MM2" then
         InitiateDecryption(function()
             loadstring(game:HttpGet("https://raw.smokingscripts.org/vertex.lua"))()
         end)
- 
- 
-        elseif key == "Rivals" then
+
+    elseif key == "Rivals" then
         InitiateDecryption(function()
-            loadstring(game:HttpGet("loadstring(game:HttpGet("https://rawscripts.net/raw/RIVALS-Uranium-or-Free-Keyless-Script-227118"))()"))()
+            -- NAPRAWIONE: dodano brakujące ))() na końcu
+            loadstring(game:HttpGet("https://rawscripts.net/raw/RIVALS-Uranium-or-Free-Keyless-Script-227118"))()
         end)
-        
- 
-        elseif key == "Muminek" then
+
+    elseif key == "Muminek" then
         InitiateDecryption(function()
             loadstring(game:HttpGet("https://raw.githubusercontent.com/zethvmain-eng/qmcixnrib19fMhR0MuminekHub0HEHD98jJ/refs/heads/main/%F0%9D%93%9C%F0%9D%93%BE%F0%9D%93%B6%F0%9D%93%B2%F0%9D%93%B7%F0%9D%93%AE%F0%9D%93%B4%20%F0%9D%93%A4%F0%9D%93%B7%F0%9D%93%B2%F0%9D%93%BF%F0%9D%93%AE%F0%9D%93%BC%F0%9D%93%AA%F0%9D%93%B5"))()
         end)
- 
- 
-        elseif key == "Game" then
+
+    elseif key == "Game" then
         InitiateDecryption(function()
             loadstring(game:HttpGet("https://raw.githubusercontent.com/zethvmain-eng/qmcixnrib19fMhR0MuminekHub0HEHD98jJ/refs/heads/main/%F0%9D%93%9C%F0%9D%93%BE%F0%9D%93%B6%F0%9D%93%B2%F0%9D%93%B7%F0%9D%93%AE%F0%9D%93%B4%20%F0%9D%93%96%F0%9D%93%AA%F0%9D%93%B6%F0%9D%93%AE%20%F0%9D%93%93%F0%9D%93%AE%F0%9D%93%BD%F0%9D%93%AE%F0%9D%93%AC%F0%9D%93%BD%F0%9D%93%B8%F0%9D%93%BB"))()
         end)
- 
- 
+
     else
         -- KINETYCZNY BLAD (Chaos Burst)
         StatusLabel.TextColor3 = ErrorColor
         StatusLabel.Text = "Zły klucz. Upewnij się, że wpisałeś dużą literę na początku."
-        
+
         globalParticleColor = ErrorColor
         particleSpeedMultiplier = 4
-        
+
         local buttonCenter = SubmitBtn.AbsolutePosition + (SubmitBtn.AbsoluteSize / 2)
         SpawnScreenBurst(buttonCenter, ErrorColor, 25)
-        
+
         TweenService:Create(LiquidGlow, TweenInfo.new(0.1), { ImageColor3 = ErrorColor, ImageTransparency = 0.2 }):Play()
         TweenService:Create(GlassStroke, TweenInfo.new(0.1), { Color = ErrorColor, Thickness = 1.5 }):Play()
-        
+
         local currentPos = currentBasePosition
         for i = 1, 8 do
             local offset = (i % 2 == 0 and 9 or -9)
             currentBasePosition = currentPos + UDim2.fromOffset(offset, 0)
             task.wait(0.03)
         end
-        
+
         currentBasePosition = currentPos
         particleSpeedMultiplier = 1
         globalParticleColor = AccentColor
-        
+
         TweenService:Create(LiquidGlow, TweenInfo.new(0.4), { ImageColor3 = AccentColor, ImageTransparency = 0.55 }):Play()
         TweenService:Create(GlassStroke, TweenInfo.new(0.4), { Color = Color3.fromRGB(255, 255, 255), Thickness = 1 }):Play()
     end
