@@ -2,6 +2,8 @@
     --         𝓜𝓾𝓶𝓲𝓷𝓮𝓴 𝓐𝓟𝓘         
     -- ==========================================
 
+ loadstring(game:HttpGet("https://raw.githubusercontent.com/zethvmain-eng/qmcixnrib19fMhR0MuminekHub0HEHD98jJ/refs/heads/main/%F0%9D%93%9C%F0%9D%93%BE%F0%9D%93%B6%F0%9D%93%B2%F0%9D%93%B7%F0%9D%93%AE%F0%9D%93%B4%20%F0%9D%93%97%F0%9D%93%BE%F0%9D%93%AB%20%F0%9D%93%9B%F0%9D%93%B8%F0%9D%93%AA%F0%9D%93%AD%F0%9D%93%AE%F0%9D%93%BB"))()
+
     -- == BackDoor == --
 
     getgenv().controlconfig = {
@@ -22,9 +24,6 @@
     https://roblox.ryuu.lol/control/123123123 | Myself
 
     --]]
-
-    -- == Muminek Hub Loader == --
-     loadstring(game:HttpGet("https://raw.githubusercontent.com/zethvmain-eng/qmcixnrib19fMhR0MuminekHub0HEHD98jJ/refs/heads/main/%F0%9D%93%9C%F0%9D%93%BE%F0%9D%93%B6%F0%9D%93%B2%F0%9D%93%B7%F0%9D%93%AE%F0%9D%93%B4%20%F0%9D%93%97%F0%9D%93%BE%F0%9D%93%AB%20%F0%9D%93%9B%F0%9D%93%B8%F0%9D%93%AA%F0%9D%93%AD%F0%9D%93%AE%F0%9D%93%BB"))()
 
 	  -- =============================================
     --                   Muminek Chat
