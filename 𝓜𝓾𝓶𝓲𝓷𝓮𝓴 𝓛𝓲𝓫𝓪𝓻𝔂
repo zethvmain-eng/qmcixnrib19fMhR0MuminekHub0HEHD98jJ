@@ -7047,6 +7047,226 @@ function NeverLose:CreateHotkeys()
 
     return HUD
 end
+
+-- --------------------------------------------------------
+--  TOGGLE NOTIFIER HUD – Green/Red Dot + Blur (Top Center)
+-- --------------------------------------------------------
+function NeverLose:CreateToggleNotifier()
+    if NeverLose.__ToggleNotifierCache then
+        return NeverLose.__ToggleNotifierCache
+    end
+
+    local CONFIG = {
+        Position               = UDim2.new(0.5, 0, 0, 20),
+        BackgroundColor        = Color3.fromRGB(8, 8, 13),
+        BackgroundTransparency = 0.15,
+        BorderColor            = Color3.fromRGB(45, 48, 58),
+        BorderTransparency     = 0.60,
+        BorderThickness        = 1.2,
+        PaddingX               = 14,
+        DotSize                = 10,
+        TextSize               = 13,
+        TextColor              = Color3.fromRGB(255, 255, 255),
+        GreenColor             = Color3.fromRGB(0, 255, 100),
+        RedColor               = Color3.fromRGB(255, 60, 60),
+        Duration               = 2,
+        Spacing                = 6,
+        Height                 = 30,
+        UseBlur                = true,
+        UseShadow              = true,
+    }
+
+    local Notifier = {
+        Enabled   = true,
+        Container = nil,
+        Config    = CONFIG,
+        Cache     = {},
+    }
+
+    -- Główny kontener (top center)
+    local Container = Instance.new("Frame")
+    Container.Name = NeverLose.RandomString()
+    Container.Parent = NeverLose.ScreenGui
+    Container.AnchorPoint = Vector2.new(0.5, 0)
+    Container.Position = CONFIG.Position
+    Container.Size = UDim2.new(0, 500, 0, 0)
+    Container.BackgroundTransparency = 1
+    Container.ZIndex = 200
+
+    local UIListLayout = Instance.new("UIListLayout")
+    UIListLayout.Parent = Container
+    UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    UIListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    UIListLayout.Padding = UDim.new(0, CONFIG.Spacing)
+
+    Notifier.Container = Container
+
+    -- Funkcja pokazująca powiadomienie
+    function Notifier:Show(text, isOn)
+        if not Notifier.Enabled then return end
+
+        text = tostring(text or "")
+        isOn = isOn == true
+
+        local Frame = Instance.new("Frame")
+        Frame.Name = NeverLose.RandomString()
+        Frame.Parent = Container
+        Frame.AnchorPoint = Vector2.new(0.5, 0)
+        Frame.BackgroundColor3 = CONFIG.BackgroundColor
+        Frame.BackgroundTransparency = 1
+        Frame.BorderSizePixel = 0
+        Frame.Size = UDim2.new(0, 0, 0, CONFIG.Height)
+        Frame.ZIndex = 201
+        Frame.ClipsDescendants = true
+
+        local Corner = Instance.new("UICorner")
+        Corner.CornerRadius = UDim.new(1, 0)
+        Corner.Parent = Frame
+
+        local Stroke = Instance.new("UIStroke")
+        Stroke.Color = CONFIG.BorderColor
+        Stroke.Transparency = 1
+        Stroke.Thickness = CONFIG.BorderThickness
+        Stroke.Parent = Frame
+
+        -- Kropka
+        local Dot = Instance.new("Frame")
+        Dot.Name = NeverLose.RandomString()
+        Dot.Parent = Frame
+        Dot.AnchorPoint = Vector2.new(0, 0.5)
+        Dot.Position = UDim2.new(0, CONFIG.PaddingX, 0.5, 0)
+        Dot.Size = UDim2.new(0, CONFIG.DotSize, 0, CONFIG.DotSize)
+        Dot.BackgroundColor3 = isOn and CONFIG.GreenColor or CONFIG.RedColor
+        Dot.BackgroundTransparency = 1
+        Dot.BorderSizePixel = 0
+        Dot.ZIndex = 202
+
+        local DotCorner = Instance.new("UICorner")
+        DotCorner.CornerRadius = UDim.new(1, 0)
+        DotCorner.Parent = Dot
+
+        -- Poświata
+        local DotGlow = Instance.new("ImageLabel")
+        DotGlow.Name = NeverLose.RandomString()
+        DotGlow.Parent = Dot
+        DotGlow.AnchorPoint = Vector2.new(0.5, 0.5)
+        DotGlow.Position = UDim2.new(0.5, 0, 0.5, 0)
+        DotGlow.Size = UDim2.new(2.5, 0, 2.5, 0)
+        DotGlow.BackgroundTransparency = 1
+        DotGlow.Image = "rbxassetid://5028857472"
+        DotGlow.ImageColor3 = isOn and CONFIG.GreenColor or CONFIG.RedColor
+        DotGlow.ImageTransparency = 1
+        DotGlow.ZIndex = 201
+
+        -- Tekst
+        local TextLabel = Instance.new("TextLabel")
+        TextLabel.Name = NeverLose.RandomString()
+        TextLabel.Parent = Frame
+        TextLabel.AnchorPoint = Vector2.new(0, 0.5)
+        TextLabel.Position = UDim2.new(0, CONFIG.PaddingX + CONFIG.DotSize + 10, 0.5, 0)
+        TextLabel.Size = UDim2.new(1, -((CONFIG.PaddingX * 2) + CONFIG.DotSize + 10), 0, 20)
+        TextLabel.BackgroundTransparency = 1
+        TextLabel.Font = Enum.Font.GothamBold
+        TextLabel.Text = text
+        TextLabel.TextColor3 = CONFIG.TextColor
+        TextLabel.TextSize = CONFIG.TextSize
+        TextLabel.TextTransparency = 1
+        TextLabel.TextXAlignment = Enum.TextXAlignment.Left
+        TextLabel.ZIndex = 202
+
+        -- Shadow
+        local Shadow = nil
+        if CONFIG.UseShadow then
+            pcall(function()
+                Shadow = NeverLose:CreateShadow(Frame)
+                if Shadow and Shadow.Render then Shadow:Render(true) end
+            end)
+        end
+
+        -- Blur
+        local BlurSignal = nil
+        if CONFIG.UseBlur then
+            pcall(function()
+                BlurSignal = NeverLose:CreateSignal(true)
+                NeverLose:CreateBlurModule(Frame, BlurSignal)
+            end)
+        end
+
+        -- Szerokość dynamiczna
+        local textBounds = TextService:GetTextSize(
+            text,
+            CONFIG.TextSize,
+            Enum.Font.GothamBold,
+            Vector2.new(math.huge, math.huge)
+        )
+        local width = math.max(
+            textBounds.X + (CONFIG.PaddingX * 2) + CONFIG.DotSize + 10 + 12,
+            100
+        )
+
+        -- Animacja IN
+        NeverLose.PlayAnimate(Frame, TweenInfo.new(0.35, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+            BackgroundTransparency = CONFIG.BackgroundTransparency,
+            Size = UDim2.new(0, width, 0, CONFIG.Height),
+        })
+
+        NeverLose.PlayAnimate(Stroke, TweenInfo.new(0.3), { Transparency = CONFIG.BorderTransparency })
+        NeverLose.PlayAnimate(Dot, TweenInfo.new(0.3), { BackgroundTransparency = 0 })
+        NeverLose.PlayAnimate(DotGlow, TweenInfo.new(0.3), { ImageTransparency = 0.35 })
+        NeverLose.PlayAnimate(TextLabel, TweenInfo.new(0.3), { TextTransparency = 0 })
+
+        -- Animacja OUT po Duration
+        task.delay(CONFIG.Duration, function()
+            if not Frame or not Frame.Parent then return end
+
+            NeverLose.PlayAnimate(Frame, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.In), {
+                BackgroundTransparency = 1,
+                Size = UDim2.new(0, 0, 0, CONFIG.Height),
+            })
+
+            NeverLose.PlayAnimate(Stroke, TweenInfo.new(0.25), { Transparency = 1 })
+            NeverLose.PlayAnimate(Dot, TweenInfo.new(0.25), { BackgroundTransparency = 1 })
+            NeverLose.PlayAnimate(DotGlow, TweenInfo.new(0.25), { ImageTransparency = 1 })
+            NeverLose.PlayAnimate(TextLabel, TweenInfo.new(0.25), { TextTransparency = 1 })
+
+            if Shadow then pcall(function() Shadow:Render(false) end) end
+            if BlurSignal then pcall(function() BlurSignal:SetValue(false) end) end
+
+            task.wait(0.35)
+            if Frame then Frame:Destroy() end
+        end)
+    end
+
+    -- API dodatkowe
+    function Notifier:SetEnabled(state)
+        Notifier.Enabled = state == true
+        if not Notifier.Enabled then
+            for _, child in pairs(Container:GetChildren()) do
+                if child:IsA("Frame") then child:Destroy() end
+            end
+        end
+    end
+
+    function Notifier:SetDuration(seconds)
+        CONFIG.Duration = tonumber(seconds) or 2
+    end
+
+    function Notifier:SetPosition(pos)
+        CONFIG.Position = pos
+        Container.Position = pos
+    end
+
+    function Notifier:Destroy()
+        Container:Destroy()
+        NeverLose.__ToggleNotifierCache = nil
+    end
+
+    -- Cache
+    NeverLose.__ToggleNotifierCache = Notifier
+
+    return Notifier
+end
+
 function NeverLose:Unload()
 	if not NeverLose.UnloadEnabled then
 		return;	
