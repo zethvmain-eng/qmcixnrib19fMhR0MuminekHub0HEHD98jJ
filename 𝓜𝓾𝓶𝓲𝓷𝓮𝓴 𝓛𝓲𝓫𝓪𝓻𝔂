@@ -7056,15 +7056,12 @@ function NeverLose:CreateToggleNotifier()
         return NeverLose.__ToggleNotifierCache
     end
 
-    -- Bezpieczna referencja do GUI (fallback gdyby ScreenGui był nil)
     local ParentGui = NeverLose.ScreenGui
     if not ParentGui then
         local ok, cg = pcall(function() return game:GetService("CoreGui") end)
         if ok and cg then ParentGui = cg end
     end
-    if not ParentGui then
-        return nil
-    end
+    if not ParentGui then return nil end
 
     local CONFIG = {
         Position               = UDim2.new(0.5, 0, 0, 20),
@@ -7103,7 +7100,6 @@ function NeverLose:CreateToggleNotifier()
 
     Notifier.Container = Container
 
-    -- ====================== STAŁY PASEK ======================
     local Bar = Instance.new("Frame")
     Bar.Name = "Bar"
     Bar.Parent = Container
@@ -7124,7 +7120,6 @@ function NeverLose:CreateToggleNotifier()
     BarStroke.Thickness = CONFIG.BorderThickness
     BarStroke.Parent = Bar
 
-    -- Ikona zegara
     local ClockIcon = Instance.new("TextLabel")
     ClockIcon.Parent = Bar
     ClockIcon.BackgroundTransparency = 1
@@ -7137,7 +7132,6 @@ function NeverLose:CreateToggleNotifier()
     ClockIcon.TextSize = 14
     ClockIcon.ZIndex = 202
 
-    -- Czas (bez sekund)
     local ClockText = Instance.new("TextLabel")
     ClockText.Parent = Bar
     ClockText.BackgroundTransparency = 1
@@ -7151,7 +7145,6 @@ function NeverLose:CreateToggleNotifier()
     ClockText.TextXAlignment = Enum.TextXAlignment.Left
     ClockText.ZIndex = 202
 
-    -- Separator 1
     local Sep1 = Instance.new("Frame")
     Sep1.Parent = Bar
     Sep1.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -7161,7 +7154,6 @@ function NeverLose:CreateToggleNotifier()
     Sep1.Size = UDim2.new(0, 1, 0, 14)
     Sep1.ZIndex = 202
 
-    -- Ikona Muminek
     local BrandIcon = Instance.new("TextLabel")
     BrandIcon.Parent = Bar
     BrandIcon.BackgroundTransparency = 1
@@ -7174,7 +7166,6 @@ function NeverLose:CreateToggleNotifier()
     BrandIcon.TextSize = 14
     BrandIcon.ZIndex = 202
 
-    -- Napis "Mu" + "m" (akcent) + "inek"
     local BrandPrefix = Instance.new("TextLabel")
     BrandPrefix.Parent = Bar
     BrandPrefix.BackgroundTransparency = 1
@@ -7214,7 +7205,6 @@ function NeverLose:CreateToggleNotifier()
     BrandSuffix.TextXAlignment = Enum.TextXAlignment.Left
     BrandSuffix.ZIndex = 202
 
-    -- Separator 2
     local Sep2 = Instance.new("Frame")
     Sep2.Parent = Bar
     Sep2.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -7224,7 +7214,6 @@ function NeverLose:CreateToggleNotifier()
     Sep2.Size = UDim2.new(0, 1, 0, 14)
     Sep2.ZIndex = 202
 
-    -- Ikona ping
     local PingIcon = Instance.new("TextLabel")
     PingIcon.Parent = Bar
     PingIcon.BackgroundTransparency = 1
@@ -7237,7 +7226,6 @@ function NeverLose:CreateToggleNotifier()
     PingIcon.TextSize = 14
     PingIcon.ZIndex = 202
 
-    -- Ping tekst (z "ms")
     local PingText = Instance.new("TextLabel")
     PingText.Parent = Bar
     PingText.BackgroundTransparency = 1
@@ -7251,22 +7239,19 @@ function NeverLose:CreateToggleNotifier()
     PingText.TextXAlignment = Enum.TextXAlignment.Left
     PingText.ZIndex = 202
 
-    -- Shadow (bezpiecznie)
     pcall(function()
         local s = NeverLose:CreateShadow(Bar)
         if s and s.Render then s:Render(true) end
     end)
 
-    -- Blur (bezpiecznie)
     pcall(function()
         local sig = NeverLose:CreateSignal(true)
         NeverLose:CreateBlurModule(Bar, sig)
     end)
 
-    -- Pętla aktualizacji
     task.spawn(function()
         local ok, LP = pcall(function() return game:GetService("Players").LocalPlayer end)
-        if not ok then return end
+        if not ok or not LP then return end
 
         local clockTimer, pingTimer = 0, 0
 
@@ -7291,7 +7276,6 @@ function NeverLose:CreateToggleNotifier()
         end
     end)
 
-    -- Show toggle (zielona/czerwona kropka)
     function Notifier:Show(text, isOn)
         if not Notifier.Enabled then return end
         text = tostring(text or "")
