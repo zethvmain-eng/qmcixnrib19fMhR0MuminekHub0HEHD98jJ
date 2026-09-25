@@ -7056,7 +7056,15 @@ function NeverLose:CreateToggleNotifier()
         return NeverLose.__ToggleNotifierCache
     end
 
-    print("[ToggleNotifier] Init...")
+    -- Bezpieczna referencja do GUI (fallback gdyby ScreenGui był nil)
+    local ParentGui = NeverLose.ScreenGui
+    if not ParentGui then
+        local ok, cg = pcall(function() return game:GetService("CoreGui") end)
+        if ok and cg then ParentGui = cg end
+    end
+    if not ParentGui then
+        return nil
+    end
 
     local CONFIG = {
         Position               = UDim2.new(0.5, 0, 0, 20),
@@ -7080,7 +7088,7 @@ function NeverLose:CreateToggleNotifier()
 
     local Container = Instance.new("Frame")
     Container.Name = "NL_ToggleNotifier"
-    Container.Parent = NeverLose.ScreenGui
+    Container.Parent = ParentGui
     Container.AnchorPoint = Vector2.new(0.5, 0)
     Container.Position = CONFIG.Position
     Container.Size = UDim2.new(0, 600, 0, 0)
@@ -7129,7 +7137,7 @@ function NeverLose:CreateToggleNotifier()
     ClockIcon.TextSize = 14
     ClockIcon.ZIndex = 202
 
-    -- Czas
+    -- Czas (bez sekund)
     local ClockText = Instance.new("TextLabel")
     ClockText.Parent = Bar
     ClockText.BackgroundTransparency = 1
@@ -7166,25 +7174,51 @@ function NeverLose:CreateToggleNotifier()
     BrandIcon.TextSize = 14
     BrandIcon.ZIndex = 202
 
-    -- Napis Muminek
-    local BrandText = Instance.new("TextLabel")
-    BrandText.Parent = Bar
-    BrandText.BackgroundTransparency = 1
-    BrandText.AnchorPoint = Vector2.new(0, 0.5)
-    BrandText.Position = UDim2.new(0, 115, 0.5, 0)
-    BrandText.Size = UDim2.new(0, 70, 1, 0)
-    BrandText.Font = Enum.Font.GothamBold
-    BrandText.Text = "Muminek"
-    BrandText.TextColor3 = CONFIG.TextColor
-    BrandText.TextSize = CONFIG.TextSize
-    BrandText.TextXAlignment = Enum.TextXAlignment.Left
-    BrandText.ZIndex = 202
+    -- Napis "Mu" + "m" (akcent) + "inek"
+    local BrandPrefix = Instance.new("TextLabel")
+    BrandPrefix.Parent = Bar
+    BrandPrefix.BackgroundTransparency = 1
+    BrandPrefix.AnchorPoint = Vector2.new(0, 0.5)
+    BrandPrefix.Position = UDim2.new(0, 115, 0.5, 0)
+    BrandPrefix.Size = UDim2.new(0, 18, 1, 0)
+    BrandPrefix.Font = Enum.Font.GothamBold
+    BrandPrefix.Text = "Mu"
+    BrandPrefix.TextColor3 = CONFIG.TextColor
+    BrandPrefix.TextSize = CONFIG.TextSize
+    BrandPrefix.TextXAlignment = Enum.TextXAlignment.Left
+    BrandPrefix.ZIndex = 202
+
+    local BrandMiddle = Instance.new("TextLabel")
+    BrandMiddle.Parent = Bar
+    BrandMiddle.BackgroundTransparency = 1
+    BrandMiddle.AnchorPoint = Vector2.new(0, 0.5)
+    BrandMiddle.Position = UDim2.new(0, 133, 0.5, 0)
+    BrandMiddle.Size = UDim2.new(0, 12, 1, 0)
+    BrandMiddle.Font = Enum.Font.GothamBold
+    BrandMiddle.Text = "m"
+    BrandMiddle.TextColor3 = CONFIG.AccentColor
+    BrandMiddle.TextSize = CONFIG.TextSize
+    BrandMiddle.TextXAlignment = Enum.TextXAlignment.Left
+    BrandMiddle.ZIndex = 202
+
+    local BrandSuffix = Instance.new("TextLabel")
+    BrandSuffix.Parent = Bar
+    BrandSuffix.BackgroundTransparency = 1
+    BrandSuffix.AnchorPoint = Vector2.new(0, 0.5)
+    BrandSuffix.Position = UDim2.new(0, 145, 0.5, 0)
+    BrandSuffix.Size = UDim2.new(0, 40, 1, 0)
+    BrandSuffix.Font = Enum.Font.GothamBold
+    BrandSuffix.Text = "inek"
+    BrandSuffix.TextColor3 = CONFIG.TextColor
+    BrandSuffix.TextSize = CONFIG.TextSize
+    BrandSuffix.TextXAlignment = Enum.TextXAlignment.Left
+    BrandSuffix.ZIndex = 202
 
     -- Separator 2
     local Sep2 = Instance.new("Frame")
     Sep2.Parent = Bar
     Sep2.AnchorPoint = Vector2.new(0.5, 0.5)
-    Sep2.Position = UDim2.new(0, 180, 0.5, 0)
+    Sep2.Position = UDim2.new(0, 195, 0.5, 0)
     Sep2.BackgroundColor3 = CONFIG.BorderColor
     Sep2.BorderSizePixel = 0
     Sep2.Size = UDim2.new(0, 1, 0, 14)
@@ -7195,35 +7229,35 @@ function NeverLose:CreateToggleNotifier()
     PingIcon.Parent = Bar
     PingIcon.BackgroundTransparency = 1
     PingIcon.AnchorPoint = Vector2.new(0, 0.5)
-    PingText.Position = UDim2.new(0, 206, 0.5, 0)
-    PingText.Size = UDim2.new(0, 40, 1, 0)
+    PingIcon.Position = UDim2.new(0, 205, 0.5, 0)
+    PingIcon.Size = UDim2.new(0, 16, 0, 16)
     PingIcon.FontFace = NeverLose.BuiltInBold
     PingIcon.Text = "chart-four-vertical-bars"
-    PingIcon.TextColor3 = Color3.fromRGB(0, 255, 100)
+    PingIcon.TextColor3 = CONFIG.GreenColor
     PingIcon.TextSize = 14
     PingIcon.ZIndex = 202
 
-    -- Ping tekst (bez "ms", stały zielony)
+    -- Ping tekst (z "ms")
     local PingText = Instance.new("TextLabel")
     PingText.Parent = Bar
     PingText.BackgroundTransparency = 1
     PingText.AnchorPoint = Vector2.new(0, 0.5)
-    PingText.Position = UDim2.new(0, 215, 0.5, 0)
+    PingText.Position = UDim2.new(0, 225, 0.5, 0)
     PingText.Size = UDim2.new(0, 55, 1, 0)
     PingText.Font = Enum.Font.GothamBold
     PingText.Text = "0ms"
-    PingText.TextColor3 = Color3.fromRGB(0, 255, 100)
+    PingText.TextColor3 = CONFIG.GreenColor
     PingText.TextSize = CONFIG.TextSize
     PingText.TextXAlignment = Enum.TextXAlignment.Left
     PingText.ZIndex = 202
 
-    -- Shadow
+    -- Shadow (bezpiecznie)
     pcall(function()
         local s = NeverLose:CreateShadow(Bar)
         if s and s.Render then s:Render(true) end
     end)
 
-    -- Blur
+    -- Blur (bezpiecznie)
     pcall(function()
         local sig = NeverLose:CreateSignal(true)
         NeverLose:CreateBlurModule(Bar, sig)
@@ -7231,8 +7265,9 @@ function NeverLose:CreateToggleNotifier()
 
     -- Pętla aktualizacji
     task.spawn(function()
-        local Players = game:GetService("Players")
-        local LP = Players.LocalPlayer
+        local ok, LP = pcall(function() return game:GetService("Players").LocalPlayer end)
+        if not ok then return end
+
         local clockTimer, pingTimer = 0, 0
 
         while Bar and Bar.Parent do
@@ -7256,7 +7291,7 @@ function NeverLose:CreateToggleNotifier()
         end
     end)
 
-    -- Show toggle
+    -- Show toggle (zielona/czerwona kropka)
     function Notifier:Show(text, isOn)
         if not Notifier.Enabled then return end
         text = tostring(text or "")
@@ -7343,7 +7378,6 @@ function NeverLose:CreateToggleNotifier()
     end
 
     NeverLose.__ToggleNotifierCache = Notifier
-    print("[ToggleNotifier] OK – elementy utworzone")
     return Notifier
 end
 
