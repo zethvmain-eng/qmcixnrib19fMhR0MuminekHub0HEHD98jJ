@@ -7209,7 +7209,7 @@ function NeverLose:CreateToggleNotifier()
     PingText.BackgroundTransparency = 1
     PingText.AnchorPoint = Vector2.new(0, 0.5)
     PingText.Position = UDim2.new(0, 215, 0.5, 0)
-    PingText.Size = UDim2.new(0, 45, 1, 0)
+    PingText.Size = UDim2.new(0, 55, 1, 0)
     PingText.Font = Enum.Font.GothamBold
     PingText.Text = "0ms"
     PingText.TextColor3 = Color3.fromRGB(0, 255, 100)
@@ -7250,7 +7250,7 @@ function NeverLose:CreateToggleNotifier()
                 pcall(function()
                     local ping = math.floor(LP:GetNetworkPing() * 1000)
                     Notifier.Ping = ping
-                    PingText.Text = tostring(ping)
+                    PingText.Text = tostring(ping) .. "ms"
                 end)
             end
         end
