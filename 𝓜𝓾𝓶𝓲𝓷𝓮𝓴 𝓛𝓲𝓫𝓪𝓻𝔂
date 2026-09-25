@@ -7048,6 +7048,9 @@ function NeverLose:CreateHotkeys()
     return HUD
 end
 
+-- --------------------------------------------------------
+--  TOGGLE NOTIFIER HUD – Top Center | Time + Muminek + Ping + Toggle Alerts
+-- --------------------------------------------------------
 function NeverLose:CreateToggleNotifier()
     if NeverLose.__ToggleNotifierCache then
         return NeverLose.__ToggleNotifierCache
@@ -7196,20 +7199,20 @@ function NeverLose:CreateToggleNotifier()
     PingIcon.Size = UDim2.new(0, 16, 0, 16)
     PingIcon.FontFace = NeverLose.BuiltInBold
     PingIcon.Text = "chart-four-vertical-bars"
-    PingIcon.TextColor3 = CONFIG.GreenColor
+    PingIcon.TextColor3 = Color3.fromRGB(0, 255, 100)
     PingIcon.TextSize = 14
     PingIcon.ZIndex = 202
 
-    -- Ping tekst
+    -- Ping tekst (bez "ms", stały zielony)
     local PingText = Instance.new("TextLabel")
     PingText.Parent = Bar
     PingText.BackgroundTransparency = 1
     PingText.AnchorPoint = Vector2.new(0, 0.5)
     PingText.Position = UDim2.new(0, 250, 0.5, 0)
-    PingText.Size = UDim2.new(0, 55, 1, 0)
+    PingText.Size = UDim2.new(0, 45, 1, 0)
     PingText.Font = Enum.Font.GothamBold
-    PingText.Text = "0ms"
-    PingText.TextColor3 = CONFIG.GreenColor
+    PingText.Text = "0"
+    PingText.TextColor3 = Color3.fromRGB(0, 255, 100)
     PingText.TextSize = CONFIG.TextSize
     PingText.TextXAlignment = Enum.TextXAlignment.Left
     PingText.ZIndex = 202
@@ -7247,14 +7250,7 @@ function NeverLose:CreateToggleNotifier()
                 pcall(function()
                     local ping = math.floor(LP:GetNetworkPing() * 1000)
                     Notifier.Ping = ping
-                    PingText.Text = tostring(ping) .. "ms"
-                    if ping < 50 then
-                        PingText.TextColor3 = CONFIG.GreenColor
-                    elseif ping < 120 then
-                        PingText.TextColor3 = Color3.fromRGB(255, 200, 60)
-                    else
-                        PingText.TextColor3 = CONFIG.RedColor
-                    end
+                    PingText.Text = tostring(ping)
                 end)
             end
         end
