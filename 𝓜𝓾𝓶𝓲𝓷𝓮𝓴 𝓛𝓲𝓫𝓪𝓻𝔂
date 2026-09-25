@@ -7135,9 +7135,9 @@ function NeverLose:CreateToggleNotifier()
     ClockText.BackgroundTransparency = 1
     ClockText.AnchorPoint = Vector2.new(0, 0.5)
     ClockText.Position = UDim2.new(0, 34, 0.5, 0)
-    ClockText.Size = UDim2.new(0, 70, 1, 0)
+    ClockText.Size = UDim2.new(0, 45, 1, 0)
     ClockText.Font = Enum.Font.GothamBold
-    ClockText.Text = os.date("%H:%M:%S")
+    ClockText.Text = os.date("%H:%M")
     ClockText.TextColor3 = CONFIG.TextColor
     ClockText.TextSize = CONFIG.TextSize
     ClockText.TextXAlignment = Enum.TextXAlignment.Left
@@ -7147,7 +7147,7 @@ function NeverLose:CreateToggleNotifier()
     local Sep1 = Instance.new("Frame")
     Sep1.Parent = Bar
     Sep1.AnchorPoint = Vector2.new(0.5, 0.5)
-    Sep1.Position = UDim2.new(0, 115, 0.5, 0)
+    Sep1.Position = UDim2.new(0, 90, 0.5, 0)
     Sep1.BackgroundColor3 = CONFIG.BorderColor
     Sep1.BorderSizePixel = 0
     Sep1.Size = UDim2.new(0, 1, 0, 14)
@@ -7242,7 +7242,7 @@ function NeverLose:CreateToggleNotifier()
 
             if clockTimer >= 1 then
                 clockTimer = 0
-                pcall(function() ClockText.Text = os.date("%H:%M:%S") end)
+                pcall(function() ClockText.Text = os.date("%H:%M") end)
             end
 
             if pingTimer >= 3 then
