@@ -7102,7 +7102,7 @@ function NeverLose:CreateToggleNotifier()
     Bar.BackgroundColor3 = CONFIG.BackgroundColor
     Bar.BackgroundTransparency = CONFIG.BackgroundTransparency
     Bar.BorderSizePixel = 0
-    Bar.Size = UDim2.new(0, 245, 0, CONFIG.Height)
+    Bar.Size = UDim2.new(0, 275, 0, CONFIG.Height)
     Bar.ZIndex = 201
     Bar.LayoutOrder = -1
 
@@ -7184,7 +7184,7 @@ function NeverLose:CreateToggleNotifier()
     local Sep2 = Instance.new("Frame")
     Sep2.Parent = Bar
     Sep2.AnchorPoint = Vector2.new(0.5, 0.5)
-    Sep2.Position = UDim2.new(0, 185, 0.5, 0)
+    Sep2.Position = UDim2.new(0, 180, 0.5, 0)
     Sep2.BackgroundColor3 = CONFIG.BorderColor
     Sep2.BorderSizePixel = 0
     Sep2.Size = UDim2.new(0, 1, 0, 14)
@@ -7195,8 +7195,8 @@ function NeverLose:CreateToggleNotifier()
     PingIcon.Parent = Bar
     PingIcon.BackgroundTransparency = 1
     PingIcon.AnchorPoint = Vector2.new(0, 0.5)
-    PingIcon.Position = UDim2.new(0, 195, 0.5, 0)
-    PingIcon.Size = UDim2.new(0, 16, 0, 16)
+    PingText.Position = UDim2.new(0, 206, 0.5, 0)
+    PingText.Size = UDim2.new(0, 40, 1, 0)
     PingIcon.FontFace = NeverLose.BuiltInBold
     PingIcon.Text = "chart-four-vertical-bars"
     PingIcon.TextColor3 = Color3.fromRGB(0, 255, 100)
