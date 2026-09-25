@@ -7048,13 +7048,12 @@ function NeverLose:CreateHotkeys()
     return HUD
 end
 
--- --------------------------------------------------------
---  TOGGLE NOTIFIER HUD – Top Center | Time + Muminek + Ping + Toggle Alerts
--- --------------------------------------------------------
 function NeverLose:CreateToggleNotifier()
     if NeverLose.__ToggleNotifierCache then
         return NeverLose.__ToggleNotifierCache
     end
+
+    print("[ToggleNotifier] Init...")
 
     local CONFIG = {
         Position               = UDim2.new(0.5, 0, 0, 20),
@@ -7063,60 +7062,45 @@ function NeverLose:CreateToggleNotifier()
         BorderColor            = Color3.fromRGB(45, 48, 58),
         BorderTransparency     = 0.60,
         BorderThickness        = 1.2,
-        PaddingX               = 14,
         DotSize                = 10,
         TextSize               = 13,
         TextColor              = Color3.fromRGB(255, 255, 255),
-        AccentColor            = NeverLose.AccentColor or Color3.fromRGB(78, 127, 252),
+        AccentColor            = Color3.fromRGB(78, 127, 252),
         GreenColor             = Color3.fromRGB(0, 255, 100),
         RedColor               = Color3.fromRGB(255, 60, 60),
         Duration               = 2,
         Spacing                = 6,
         Height                 = 30,
-        PingInterval           = 3,
-        ClockInterval          = 1,
-        UseBlur                = true,
-        UseShadow              = true,
     }
 
-    local Notifier = {
-        Enabled   = true,
-        Container = nil,
-        Config    = CONFIG,
-        Ping      = 0,
-    }
+    local Notifier = { Enabled = true, Ping = 0, Config = CONFIG }
 
-    -- Główny kontener (top center)
     local Container = Instance.new("Frame")
-    Container.Name = NeverLose.RandomString()
+    Container.Name = "NL_ToggleNotifier"
     Container.Parent = NeverLose.ScreenGui
     Container.AnchorPoint = Vector2.new(0.5, 0)
     Container.Position = CONFIG.Position
-    Container.Size = UDim2.new(0, 500, 0, 0)
+    Container.Size = UDim2.new(0, 600, 0, 0)
     Container.BackgroundTransparency = 1
     Container.ZIndex = 200
 
-    local UIListLayout = Instance.new("UIListLayout")
-    UIListLayout.Parent = Container
-    UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    UIListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-    UIListLayout.Padding = UDim.new(0, CONFIG.Spacing)
+    local ListLayout = Instance.new("UIListLayout")
+    ListLayout.Parent = Container
+    ListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    ListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    ListLayout.Padding = UDim.new(0, CONFIG.Spacing)
 
     Notifier.Container = Container
 
-    -- ==========================================================
-    --  PASEK STAŁY: Godzina | Muminek | Ping
-    -- ==========================================================
+    -- ====================== STAŁY PASEK ======================
     local Bar = Instance.new("Frame")
-    Bar.Name = NeverLose.RandomString()
+    Bar.Name = "Bar"
     Bar.Parent = Container
-    Bar.AnchorPoint = Vector2.new(0.5, 0)
     Bar.BackgroundColor3 = CONFIG.BackgroundColor
     Bar.BackgroundTransparency = CONFIG.BackgroundTransparency
     Bar.BorderSizePixel = 0
-    Bar.Size = UDim2.new(0, 240, 0, CONFIG.Height)
+    Bar.Size = UDim2.new(0, 280, 0, CONFIG.Height)
     Bar.ZIndex = 201
-    Bar.ClipsDescendants = true
     Bar.LayoutOrder = -1
 
     local BarCorner = Instance.new("UICorner")
@@ -7129,322 +7113,241 @@ function NeverLose:CreateToggleNotifier()
     BarStroke.Thickness = CONFIG.BorderThickness
     BarStroke.Parent = Bar
 
-    local BarLayout = Instance.new("UIListLayout")
-    BarLayout.Parent = Bar
-    BarLayout.FillDirection = Enum.FillDirection.Horizontal
-    BarLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-    BarLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-    BarLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    BarLayout.Padding = UDim.new(0, 10)
+    -- Ikona zegara
+    local ClockIcon = Instance.new("TextLabel")
+    ClockIcon.Parent = Bar
+    ClockIcon.BackgroundTransparency = 1
+    ClockIcon.AnchorPoint = Vector2.new(0, 0.5)
+    ClockIcon.Position = UDim2.new(0, 14, 0.5, 0)
+    ClockIcon.Size = UDim2.new(0, 16, 0, 16)
+    ClockIcon.FontFace = NeverLose.BuiltInBold
+    ClockIcon.Text = "clock"
+    ClockIcon.TextColor3 = CONFIG.AccentColor
+    ClockIcon.TextSize = 14
+    ClockIcon.ZIndex = 202
 
-    local BarPadding = Instance.new("UIPadding")
-    BarPadding.Parent = Bar
-    BarPadding.PaddingLeft = UDim.new(0, CONFIG.PaddingX)
-    BarPadding.PaddingRight = UDim.new(0, CONFIG.PaddingX)
-
-    -- Helper: tworzy segment (ikona + tekst)
-    local function createSegment(icon, text, color, layoutOrder)
-        local Seg = Instance.new("Frame")
-        Seg.Name = NeverLose.RandomString()
-        Seg.Parent = Bar
-        Seg.BackgroundTransparency = 1
-        Seg.Size = UDim2.new(0, 0, 1, 0)
-        Seg.AutomaticSize = Enum.AutomaticSize.X
-        Seg.ZIndex = 202
-        Seg.LayoutOrder = layoutOrder or 0
-
-        local SegLayout = Instance.new("UIListLayout")
-        SegLayout.Parent = Seg
-        SegLayout.FillDirection = Enum.FillDirection.Horizontal
-        SegLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-        SegLayout.SortOrder = Enum.SortOrder.LayoutOrder
-        SegLayout.Padding = UDim.new(0, 5)
-
-        local IconLbl = Instance.new("TextLabel")
-        IconLbl.Name = "Icon"
-        IconLbl.Parent = Seg
-        IconLbl.BackgroundTransparency = 1
-        IconLbl.Size = UDim2.new(0, 16, 1, 0)
-        IconLbl.FontFace = NeverLose.BuiltInBold
-        IconLbl.Text = icon or "circle"
-        IconLbl.TextColor3 = color or CONFIG.AccentColor
-        IconLbl.TextSize = 14
-        IconLbl.TextXAlignment = Enum.TextXAlignment.Center
-        IconLbl.ZIndex = 203
-        IconLbl.LayoutOrder = 1
-
-        local TextLbl = Instance.new("TextLabel")
-        TextLbl.Name = "Text"
-        TextLbl.Parent = Seg
-        TextLbl.BackgroundTransparency = 1
-        TextLbl.Size = UDim2.new(0, 0, 1, 0)
-        TextLbl.AutomaticSize = Enum.AutomaticSize.X
-        TextLbl.Font = Enum.Font.GothamBold
-        TextLbl.Text = text or ""
-        TextLbl.TextColor3 = CONFIG.TextColor
-        TextLbl.TextSize = CONFIG.TextSize
-        TextLbl.TextXAlignment = Enum.TextXAlignment.Left
-        TextLbl.ZIndex = 203
-        TextLbl.LayoutOrder = 2
-
-        return Seg, IconLbl, TextLbl
-    end
-
-    -- Segment: Godzina
-    local _, clockIcon, clockText = createSegment("clock", "00:00:00", CONFIG.AccentColor, 1)
+    -- Czas
+    local ClockText = Instance.new("TextLabel")
+    ClockText.Parent = Bar
+    ClockText.BackgroundTransparency = 1
+    ClockText.AnchorPoint = Vector2.new(0, 0.5)
+    ClockText.Position = UDim2.new(0, 34, 0.5, 0)
+    ClockText.Size = UDim2.new(0, 70, 1, 0)
+    ClockText.Font = Enum.Font.GothamBold
+    ClockText.Text = os.date("%H:%M:%S")
+    ClockText.TextColor3 = CONFIG.TextColor
+    ClockText.TextSize = CONFIG.TextSize
+    ClockText.TextXAlignment = Enum.TextXAlignment.Left
+    ClockText.ZIndex = 202
 
     -- Separator 1
     local Sep1 = Instance.new("Frame")
     Sep1.Parent = Bar
+    Sep1.AnchorPoint = Vector2.new(0.5, 0.5)
+    Sep1.Position = UDim2.new(0, 115, 0.5, 0)
     Sep1.BackgroundColor3 = CONFIG.BorderColor
     Sep1.BorderSizePixel = 0
     Sep1.Size = UDim2.new(0, 1, 0, 14)
     Sep1.ZIndex = 202
-    Sep1.LayoutOrder = 2
 
-    -- Segment: Muminek (branding)
-    local _, brandIcon, brandText = createSegment("cube-vertexes", "Muminek", CONFIG.AccentColor, 3)
+    -- Ikona Muminek
+    local BrandIcon = Instance.new("TextLabel")
+    BrandIcon.Parent = Bar
+    BrandIcon.BackgroundTransparency = 1
+    BrandIcon.AnchorPoint = Vector2.new(0, 0.5)
+    BrandIcon.Position = UDim2.new(0, 125, 0.5, 0)
+    BrandIcon.Size = UDim2.new(0, 16, 0, 16)
+    BrandIcon.FontFace = NeverLose.BuiltInBold
+    BrandIcon.Text = "cube-vertexes"
+    BrandIcon.TextColor3 = CONFIG.AccentColor
+    BrandIcon.TextSize = 14
+    BrandIcon.ZIndex = 202
+
+    -- Napis Muminek
+    local BrandText = Instance.new("TextLabel")
+    BrandText.Parent = Bar
+    BrandText.BackgroundTransparency = 1
+    BrandText.AnchorPoint = Vector2.new(0, 0.5)
+    BrandText.Position = UDim2.new(0, 145, 0.5, 0)
+    BrandText.Size = UDim2.new(0, 70, 1, 0)
+    BrandText.Font = Enum.Font.GothamBold
+    BrandText.Text = "Muminek"
+    BrandText.TextColor3 = CONFIG.TextColor
+    BrandText.TextSize = CONFIG.TextSize
+    BrandText.TextXAlignment = Enum.TextXAlignment.Left
+    BrandText.ZIndex = 202
 
     -- Separator 2
     local Sep2 = Instance.new("Frame")
     Sep2.Parent = Bar
+    Sep2.AnchorPoint = Vector2.new(0.5, 0.5)
+    Sep2.Position = UDim2.new(0, 220, 0.5, 0)
     Sep2.BackgroundColor3 = CONFIG.BorderColor
     Sep2.BorderSizePixel = 0
     Sep2.Size = UDim2.new(0, 1, 0, 14)
     Sep2.ZIndex = 202
-    Sep2.LayoutOrder = 4
 
-    -- Segment: Ping
-    local _, pingIcon, pingText = createSegment("chart-four-vertical-bars", "0ms", CONFIG.GreenColor, 5)
+    -- Ikona ping
+    local PingIcon = Instance.new("TextLabel")
+    PingIcon.Parent = Bar
+    PingIcon.BackgroundTransparency = 1
+    PingIcon.AnchorPoint = Vector2.new(0, 0.5)
+    PingIcon.Position = UDim2.new(0, 230, 0.5, 0)
+    PingIcon.Size = UDim2.new(0, 16, 0, 16)
+    PingIcon.FontFace = NeverLose.BuiltInBold
+    PingIcon.Text = "chart-four-vertical-bars"
+    PingIcon.TextColor3 = CONFIG.GreenColor
+    PingIcon.TextSize = 14
+    PingIcon.ZIndex = 202
 
-    -- Shadow + Blur dla paska
-    local BarShadow = nil
-    if CONFIG.UseShadow then
-        pcall(function()
-            BarShadow = NeverLose:CreateShadow(Bar)
-            if BarShadow and BarShadow.Render then BarShadow:Render(true) end
-        end)
-    end
+    -- Ping tekst
+    local PingText = Instance.new("TextLabel")
+    PingText.Parent = Bar
+    PingText.BackgroundTransparency = 1
+    PingText.AnchorPoint = Vector2.new(0, 0.5)
+    PingText.Position = UDim2.new(0, 250, 0.5, 0)
+    PingText.Size = UDim2.new(0, 55, 1, 0)
+    PingText.Font = Enum.Font.GothamBold
+    PingText.Text = "0ms"
+    PingText.TextColor3 = CONFIG.GreenColor
+    PingText.TextSize = CONFIG.TextSize
+    PingText.TextXAlignment = Enum.TextXAlignment.Left
+    PingText.ZIndex = 202
 
-    local BarBlurSignal = nil
-    if CONFIG.UseBlur then
-        pcall(function()
-            BarBlurSignal = NeverLose:CreateSignal(true)
-            NeverLose:CreateBlurModule(Bar, BarBlurSignal)
-        end)
-    end
+    -- Shadow
+    pcall(function()
+        local s = NeverLose:CreateShadow(Bar)
+        if s and s.Render then s:Render(true) end
+    end)
 
-    -- ==========================================================
-    --  PĘTLA AKTUALIZACJI: Godzina + Ping
-    -- ==========================================================
+    -- Blur
+    pcall(function()
+        local sig = NeverLose:CreateSignal(true)
+        NeverLose:CreateBlurModule(Bar, sig)
+    end)
+
+    -- Pętla aktualizacji
     task.spawn(function()
         local Players = game:GetService("Players")
-        local LocalPlayer = Players.LocalPlayer
-
-        local clockTimer = 0
-        local pingTimer = 0
+        local LP = Players.LocalPlayer
+        local clockTimer, pingTimer = 0, 0
 
         while Bar and Bar.Parent do
-            task.wait(0.1)
-            clockTimer = clockTimer + 0.1
-            pingTimer = pingTimer + 0.1
+            task.wait(0.25)
+            clockTimer = clockTimer + 0.25
+            pingTimer = pingTimer + 0.25
 
-            -- Zegar (co 1s)
-            if clockTimer >= CONFIG.ClockInterval then
+            if clockTimer >= 1 then
                 clockTimer = 0
-                pcall(function()
-                    clockText.Text = os.date("%H:%M:%S")
-                end)
+                pcall(function() ClockText.Text = os.date("%H:%M:%S") end)
             end
 
-            -- Ping (co 3s)
-            if pingTimer >= CONFIG.PingInterval then
+            if pingTimer >= 3 then
                 pingTimer = 0
                 pcall(function()
-                    local ping = math.floor(LocalPlayer:GetNetworkPing() * 1000)
+                    local ping = math.floor(LP:GetNetworkPing() * 1000)
                     Notifier.Ping = ping
-                    pingText.Text = tostring(ping) .. "ms"
-
-                    -- Kolor w zależności od pingu
+                    PingText.Text = tostring(ping) .. "ms"
                     if ping < 50 then
-                        pingText.TextColor3 = CONFIG.GreenColor
+                        PingText.TextColor3 = CONFIG.GreenColor
                     elseif ping < 120 then
-                        pingText.TextColor3 = Color3.fromRGB(255, 200, 60)
+                        PingText.TextColor3 = Color3.fromRGB(255, 200, 60)
                     else
-                        pingText.TextColor3 = CONFIG.RedColor
+                        PingText.TextColor3 = CONFIG.RedColor
                     end
                 end)
             end
         end
     end)
 
-    -- ==========================================================
-    --  FUNKCJA: Show (toggle alerts – zielona/czerwona kropka)
-    -- ==========================================================
+    -- Show toggle
     function Notifier:Show(text, isOn)
         if not Notifier.Enabled then return end
-
         text = tostring(text or "")
         isOn = isOn == true
 
         local Frame = Instance.new("Frame")
-        Frame.Name = NeverLose.RandomString()
         Frame.Parent = Container
-        Frame.AnchorPoint = Vector2.new(0.5, 0)
         Frame.BackgroundColor3 = CONFIG.BackgroundColor
-        Frame.BackgroundTransparency = 1
+        Frame.BackgroundTransparency = CONFIG.BackgroundTransparency
         Frame.BorderSizePixel = 0
-        Frame.Size = UDim2.new(0, 0, 0, CONFIG.Height)
+        Frame.Size = UDim2.new(0, 240, 0, CONFIG.Height)
         Frame.ZIndex = 205
-        Frame.ClipsDescendants = true
         Frame.LayoutOrder = 100
 
-        local Corner = Instance.new("UICorner")
-        Corner.CornerRadius = UDim.new(1, 0)
-        Corner.Parent = Frame
+        local C = Instance.new("UICorner")
+        C.CornerRadius = UDim.new(1, 0)
+        C.Parent = Frame
 
-        local Stroke = Instance.new("UIStroke")
-        Stroke.Color = CONFIG.BorderColor
-        Stroke.Transparency = 1
-        Stroke.Thickness = CONFIG.BorderThickness
-        Stroke.Parent = Frame
+        local S = Instance.new("UIStroke")
+        S.Color = CONFIG.BorderColor
+        S.Transparency = CONFIG.BorderTransparency
+        S.Thickness = CONFIG.BorderThickness
+        S.Parent = Frame
 
-        -- Kropka
         local Dot = Instance.new("Frame")
-        Dot.Name = NeverLose.RandomString()
         Dot.Parent = Frame
         Dot.AnchorPoint = Vector2.new(0, 0.5)
-        Dot.Position = UDim2.new(0, CONFIG.PaddingX, 0.5, 0)
+        Dot.Position = UDim2.new(0, 14, 0.5, 0)
         Dot.Size = UDim2.new(0, CONFIG.DotSize, 0, CONFIG.DotSize)
         Dot.BackgroundColor3 = isOn and CONFIG.GreenColor or CONFIG.RedColor
-        Dot.BackgroundTransparency = 1
         Dot.BorderSizePixel = 0
         Dot.ZIndex = 206
 
-        local DotCorner = Instance.new("UICorner")
-        DotCorner.CornerRadius = UDim.new(1, 0)
-        DotCorner.Parent = Dot
+        local DC = Instance.new("UICorner")
+        DC.CornerRadius = UDim.new(1, 0)
+        DC.Parent = Dot
 
-        -- Poświata
-        local DotGlow = Instance.new("ImageLabel")
-        DotGlow.Name = NeverLose.RandomString()
-        DotGlow.Parent = Dot
-        DotGlow.AnchorPoint = Vector2.new(0.5, 0.5)
-        DotGlow.Position = UDim2.new(0.5, 0, 0.5, 0)
-        DotGlow.Size = UDim2.new(2.5, 0, 2.5, 0)
-        DotGlow.BackgroundTransparency = 1
-        DotGlow.Image = "rbxassetid://5028857472"
-        DotGlow.ImageColor3 = isOn and CONFIG.GreenColor or CONFIG.RedColor
-        DotGlow.ImageTransparency = 1
-        DotGlow.ZIndex = 205
+        local T = Instance.new("TextLabel")
+        T.Parent = Frame
+        T.AnchorPoint = Vector2.new(0, 0.5)
+        T.Position = UDim2.new(0, 34, 0.5, 0)
+        T.Size = UDim2.new(1, -44, 1, 0)
+        T.BackgroundTransparency = 1
+        T.Font = Enum.Font.GothamBold
+        T.Text = text
+        T.TextColor3 = CONFIG.TextColor
+        T.TextSize = CONFIG.TextSize
+        T.TextXAlignment = Enum.TextXAlignment.Left
+        T.ZIndex = 206
 
-        -- Tekst
-        local TextLabel = Instance.new("TextLabel")
-        TextLabel.Name = NeverLose.RandomString()
-        TextLabel.Parent = Frame
-        TextLabel.AnchorPoint = Vector2.new(0, 0.5)
-        TextLabel.Position = UDim2.new(0, CONFIG.PaddingX + CONFIG.DotSize + 10, 0.5, 0)
-        TextLabel.Size = UDim2.new(1, -((CONFIG.PaddingX * 2) + CONFIG.DotSize + 10), 0, 20)
-        TextLabel.BackgroundTransparency = 1
-        TextLabel.Font = Enum.Font.GothamBold
-        TextLabel.Text = text
-        TextLabel.TextColor3 = CONFIG.TextColor
-        TextLabel.TextSize = CONFIG.TextSize
-        TextLabel.TextTransparency = 1
-        TextLabel.TextXAlignment = Enum.TextXAlignment.Left
-        TextLabel.ZIndex = 206
+        pcall(function()
+            local sh = NeverLose:CreateShadow(Frame)
+            if sh and sh.Render then sh:Render(true) end
+        end)
+        pcall(function()
+            local sig = NeverLose:CreateSignal(true)
+            NeverLose:CreateBlurModule(Frame, sig)
+        end)
 
-        -- Shadow + Blur
-        local Shadow = nil
-        if CONFIG.UseShadow then
-            pcall(function()
-                Shadow = NeverLose:CreateShadow(Frame)
-                if Shadow and Shadow.Render then Shadow:Render(true) end
-            end)
-        end
+        local bounds = TextService:GetTextSize(text, CONFIG.TextSize, Enum.Font.GothamBold, Vector2.new(math.huge, math.huge))
+        Frame.Size = UDim2.new(0, math.max(bounds.X + 60, 120), 0, CONFIG.Height)
 
-        local BlurSignal = nil
-        if CONFIG.UseBlur then
-            pcall(function()
-                BlurSignal = NeverLose:CreateSignal(true)
-                NeverLose:CreateBlurModule(Frame, BlurSignal)
-            end)
-        end
-
-        -- Dynamiczna szerokość
-        local textBounds = TextService:GetTextSize(
-            text, CONFIG.TextSize, Enum.Font.GothamBold, Vector2.new(math.huge, math.huge)
-        )
-        local width = math.max(textBounds.X + (CONFIG.PaddingX * 2) + CONFIG.DotSize + 10 + 12, 100)
-
-        -- IN
-        NeverLose.PlayAnimate(Frame, TweenInfo.new(0.35, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-            BackgroundTransparency = CONFIG.BackgroundTransparency,
-            Size = UDim2.new(0, width, 0, CONFIG.Height),
-        })
-        NeverLose.PlayAnimate(Stroke, TweenInfo.new(0.3), { Transparency = CONFIG.BorderTransparency })
-        NeverLose.PlayAnimate(Dot, TweenInfo.new(0.3), { BackgroundTransparency = 0 })
-        NeverLose.PlayAnimate(DotGlow, TweenInfo.new(0.3), { ImageTransparency = 0.35 })
-        NeverLose.PlayAnimate(TextLabel, TweenInfo.new(0.3), { TextTransparency = 0 })
-
-        -- OUT
         task.delay(CONFIG.Duration, function()
             if not Frame or not Frame.Parent then return end
-
             NeverLose.PlayAnimate(Frame, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.In), {
                 BackgroundTransparency = 1,
                 Size = UDim2.new(0, 0, 0, CONFIG.Height),
             })
-            NeverLose.PlayAnimate(Stroke, TweenInfo.new(0.25), { Transparency = 1 })
+            NeverLose.PlayAnimate(S, TweenInfo.new(0.25), { Transparency = 1 })
             NeverLose.PlayAnimate(Dot, TweenInfo.new(0.25), { BackgroundTransparency = 1 })
-            NeverLose.PlayAnimate(DotGlow, TweenInfo.new(0.25), { ImageTransparency = 1 })
-            NeverLose.PlayAnimate(TextLabel, TweenInfo.new(0.25), { TextTransparency = 1 })
-
-            if Shadow then pcall(function() Shadow:Render(false) end) end
-            if BlurSignal then pcall(function() BlurSignal:SetValue(false) end) end
-
+            NeverLose.PlayAnimate(T, TweenInfo.new(0.25), { TextTransparency = 1 })
             task.wait(0.35)
             if Frame then Frame:Destroy() end
         end)
     end
 
-    -- ==========================================================
-    --  API DODATKOWE
-    -- ==========================================================
     function Notifier:SetEnabled(state)
         Notifier.Enabled = state == true
         Container.Visible = state == true
-        if not Notifier.Enabled then
-            for _, child in pairs(Container:GetChildren()) do
-                if child:IsA("Frame") and child ~= Bar then
-                    child:Destroy()
-                end
-            end
-        end
     end
 
-    function Notifier:SetDuration(seconds)
-        CONFIG.Duration = tonumber(seconds) or 2
-    end
-
-    function Notifier:SetPosition(pos)
-        CONFIG.Position = pos
-        Container.Position = pos
-    end
-
-    function Notifier:SetBrandName(name)
-        pcall(function()
-            brandText.Text = tostring(name or "Muminek")
-        end)
-    end
-
-    function Notifier:Destroy()
-        Container:Destroy()
-        NeverLose.__ToggleNotifierCache = nil
+    function Notifier:SetDuration(s)
+        CONFIG.Duration = tonumber(s) or 2
     end
 
     NeverLose.__ToggleNotifierCache = Notifier
-
+    print("[ToggleNotifier] OK – elementy utworzone")
     return Notifier
 end
 
