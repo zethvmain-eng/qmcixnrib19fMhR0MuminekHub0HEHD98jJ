@@ -7049,7 +7049,7 @@ function NeverLose:CreateHotkeys()
 end
 
 -- --------------------------------------------------------
---  TOGGLE NOTIFIER HUD – Green/Red Dot + Blur (Top Center)
+--  TOGGLE NOTIFIER HUD – Top Center | Time + Muminek + Ping + Toggle Alerts
 -- --------------------------------------------------------
 function NeverLose:CreateToggleNotifier()
     if NeverLose.__ToggleNotifierCache then
@@ -7067,11 +7067,14 @@ function NeverLose:CreateToggleNotifier()
         DotSize                = 10,
         TextSize               = 13,
         TextColor              = Color3.fromRGB(255, 255, 255),
+        AccentColor            = NeverLose.AccentColor or Color3.fromRGB(78, 127, 252),
         GreenColor             = Color3.fromRGB(0, 255, 100),
         RedColor               = Color3.fromRGB(255, 60, 60),
         Duration               = 2,
         Spacing                = 6,
         Height                 = 30,
+        PingInterval           = 3,
+        ClockInterval          = 1,
         UseBlur                = true,
         UseShadow              = true,
     }
@@ -7080,7 +7083,7 @@ function NeverLose:CreateToggleNotifier()
         Enabled   = true,
         Container = nil,
         Config    = CONFIG,
-        Cache     = {},
+        Ping      = 0,
     }
 
     -- Główny kontener (top center)
@@ -7101,7 +7104,183 @@ function NeverLose:CreateToggleNotifier()
 
     Notifier.Container = Container
 
-    -- Funkcja pokazująca powiadomienie
+    -- ==========================================================
+    --  PASEK STAŁY: Godzina | Muminek | Ping
+    -- ==========================================================
+    local Bar = Instance.new("Frame")
+    Bar.Name = NeverLose.RandomString()
+    Bar.Parent = Container
+    Bar.AnchorPoint = Vector2.new(0.5, 0)
+    Bar.BackgroundColor3 = CONFIG.BackgroundColor
+    Bar.BackgroundTransparency = CONFIG.BackgroundTransparency
+    Bar.BorderSizePixel = 0
+    Bar.Size = UDim2.new(0, 240, 0, CONFIG.Height)
+    Bar.ZIndex = 201
+    Bar.ClipsDescendants = true
+    Bar.LayoutOrder = -1
+
+    local BarCorner = Instance.new("UICorner")
+    BarCorner.CornerRadius = UDim.new(1, 0)
+    BarCorner.Parent = Bar
+
+    local BarStroke = Instance.new("UIStroke")
+    BarStroke.Color = CONFIG.BorderColor
+    BarStroke.Transparency = CONFIG.BorderTransparency
+    BarStroke.Thickness = CONFIG.BorderThickness
+    BarStroke.Parent = Bar
+
+    local BarLayout = Instance.new("UIListLayout")
+    BarLayout.Parent = Bar
+    BarLayout.FillDirection = Enum.FillDirection.Horizontal
+    BarLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+    BarLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    BarLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    BarLayout.Padding = UDim.new(0, 10)
+
+    local BarPadding = Instance.new("UIPadding")
+    BarPadding.Parent = Bar
+    BarPadding.PaddingLeft = UDim.new(0, CONFIG.PaddingX)
+    BarPadding.PaddingRight = UDim.new(0, CONFIG.PaddingX)
+
+    -- Helper: tworzy segment (ikona + tekst)
+    local function createSegment(icon, text, color, layoutOrder)
+        local Seg = Instance.new("Frame")
+        Seg.Name = NeverLose.RandomString()
+        Seg.Parent = Bar
+        Seg.BackgroundTransparency = 1
+        Seg.Size = UDim2.new(0, 0, 1, 0)
+        Seg.AutomaticSize = Enum.AutomaticSize.X
+        Seg.ZIndex = 202
+        Seg.LayoutOrder = layoutOrder or 0
+
+        local SegLayout = Instance.new("UIListLayout")
+        SegLayout.Parent = Seg
+        SegLayout.FillDirection = Enum.FillDirection.Horizontal
+        SegLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+        SegLayout.SortOrder = Enum.SortOrder.LayoutOrder
+        SegLayout.Padding = UDim.new(0, 5)
+
+        local IconLbl = Instance.new("TextLabel")
+        IconLbl.Name = "Icon"
+        IconLbl.Parent = Seg
+        IconLbl.BackgroundTransparency = 1
+        IconLbl.Size = UDim2.new(0, 16, 1, 0)
+        IconLbl.FontFace = NeverLose.BuiltInBold
+        IconLbl.Text = icon or "circle"
+        IconLbl.TextColor3 = color or CONFIG.AccentColor
+        IconLbl.TextSize = 14
+        IconLbl.TextXAlignment = Enum.TextXAlignment.Center
+        IconLbl.ZIndex = 203
+        IconLbl.LayoutOrder = 1
+
+        local TextLbl = Instance.new("TextLabel")
+        TextLbl.Name = "Text"
+        TextLbl.Parent = Seg
+        TextLbl.BackgroundTransparency = 1
+        TextLbl.Size = UDim2.new(0, 0, 1, 0)
+        TextLbl.AutomaticSize = Enum.AutomaticSize.X
+        TextLbl.Font = Enum.Font.GothamBold
+        TextLbl.Text = text or ""
+        TextLbl.TextColor3 = CONFIG.TextColor
+        TextLbl.TextSize = CONFIG.TextSize
+        TextLbl.TextXAlignment = Enum.TextXAlignment.Left
+        TextLbl.ZIndex = 203
+        TextLbl.LayoutOrder = 2
+
+        return Seg, IconLbl, TextLbl
+    end
+
+    -- Segment: Godzina
+    local _, clockIcon, clockText = createSegment("clock", "00:00:00", CONFIG.AccentColor, 1)
+
+    -- Separator 1
+    local Sep1 = Instance.new("Frame")
+    Sep1.Parent = Bar
+    Sep1.BackgroundColor3 = CONFIG.BorderColor
+    Sep1.BorderSizePixel = 0
+    Sep1.Size = UDim2.new(0, 1, 0, 14)
+    Sep1.ZIndex = 202
+    Sep1.LayoutOrder = 2
+
+    -- Segment: Muminek (branding)
+    local _, brandIcon, brandText = createSegment("cube-vertexes", "Muminek", CONFIG.AccentColor, 3)
+
+    -- Separator 2
+    local Sep2 = Instance.new("Frame")
+    Sep2.Parent = Bar
+    Sep2.BackgroundColor3 = CONFIG.BorderColor
+    Sep2.BorderSizePixel = 0
+    Sep2.Size = UDim2.new(0, 1, 0, 14)
+    Sep2.ZIndex = 202
+    Sep2.LayoutOrder = 4
+
+    -- Segment: Ping
+    local _, pingIcon, pingText = createSegment("chart-four-vertical-bars", "0ms", CONFIG.GreenColor, 5)
+
+    -- Shadow + Blur dla paska
+    local BarShadow = nil
+    if CONFIG.UseShadow then
+        pcall(function()
+            BarShadow = NeverLose:CreateShadow(Bar)
+            if BarShadow and BarShadow.Render then BarShadow:Render(true) end
+        end)
+    end
+
+    local BarBlurSignal = nil
+    if CONFIG.UseBlur then
+        pcall(function()
+            BarBlurSignal = NeverLose:CreateSignal(true)
+            NeverLose:CreateBlurModule(Bar, BarBlurSignal)
+        end)
+    end
+
+    -- ==========================================================
+    --  PĘTLA AKTUALIZACJI: Godzina + Ping
+    -- ==========================================================
+    task.spawn(function()
+        local Players = game:GetService("Players")
+        local LocalPlayer = Players.LocalPlayer
+
+        local clockTimer = 0
+        local pingTimer = 0
+
+        while Bar and Bar.Parent do
+            task.wait(0.1)
+            clockTimer = clockTimer + 0.1
+            pingTimer = pingTimer + 0.1
+
+            -- Zegar (co 1s)
+            if clockTimer >= CONFIG.ClockInterval then
+                clockTimer = 0
+                pcall(function()
+                    clockText.Text = os.date("%H:%M:%S")
+                end)
+            end
+
+            -- Ping (co 3s)
+            if pingTimer >= CONFIG.PingInterval then
+                pingTimer = 0
+                pcall(function()
+                    local ping = math.floor(LocalPlayer:GetNetworkPing() * 1000)
+                    Notifier.Ping = ping
+                    pingText.Text = tostring(ping) .. "ms"
+
+                    -- Kolor w zależności od pingu
+                    if ping < 50 then
+                        pingText.TextColor3 = CONFIG.GreenColor
+                    elseif ping < 120 then
+                        pingText.TextColor3 = Color3.fromRGB(255, 200, 60)
+                    else
+                        pingText.TextColor3 = CONFIG.RedColor
+                    end
+                end)
+            end
+        end
+    end)
+
+    -- ==========================================================
+    --  FUNKCJA: Show (toggle alerts – zielona/czerwona kropka)
+    -- ==========================================================
     function Notifier:Show(text, isOn)
         if not Notifier.Enabled then return end
 
@@ -7116,8 +7295,9 @@ function NeverLose:CreateToggleNotifier()
         Frame.BackgroundTransparency = 1
         Frame.BorderSizePixel = 0
         Frame.Size = UDim2.new(0, 0, 0, CONFIG.Height)
-        Frame.ZIndex = 201
+        Frame.ZIndex = 205
         Frame.ClipsDescendants = true
+        Frame.LayoutOrder = 100
 
         local Corner = Instance.new("UICorner")
         Corner.CornerRadius = UDim.new(1, 0)
@@ -7139,7 +7319,7 @@ function NeverLose:CreateToggleNotifier()
         Dot.BackgroundColor3 = isOn and CONFIG.GreenColor or CONFIG.RedColor
         Dot.BackgroundTransparency = 1
         Dot.BorderSizePixel = 0
-        Dot.ZIndex = 202
+        Dot.ZIndex = 206
 
         local DotCorner = Instance.new("UICorner")
         DotCorner.CornerRadius = UDim.new(1, 0)
@@ -7156,7 +7336,7 @@ function NeverLose:CreateToggleNotifier()
         DotGlow.Image = "rbxassetid://5028857472"
         DotGlow.ImageColor3 = isOn and CONFIG.GreenColor or CONFIG.RedColor
         DotGlow.ImageTransparency = 1
-        DotGlow.ZIndex = 201
+        DotGlow.ZIndex = 205
 
         -- Tekst
         local TextLabel = Instance.new("TextLabel")
@@ -7172,9 +7352,9 @@ function NeverLose:CreateToggleNotifier()
         TextLabel.TextSize = CONFIG.TextSize
         TextLabel.TextTransparency = 1
         TextLabel.TextXAlignment = Enum.TextXAlignment.Left
-        TextLabel.ZIndex = 202
+        TextLabel.ZIndex = 206
 
-        -- Shadow
+        -- Shadow + Blur
         local Shadow = nil
         if CONFIG.UseShadow then
             pcall(function()
@@ -7183,7 +7363,6 @@ function NeverLose:CreateToggleNotifier()
             end)
         end
 
-        -- Blur
         local BlurSignal = nil
         if CONFIG.UseBlur then
             pcall(function()
@@ -7192,30 +7371,23 @@ function NeverLose:CreateToggleNotifier()
             end)
         end
 
-        -- Szerokość dynamiczna
+        -- Dynamiczna szerokość
         local textBounds = TextService:GetTextSize(
-            text,
-            CONFIG.TextSize,
-            Enum.Font.GothamBold,
-            Vector2.new(math.huge, math.huge)
+            text, CONFIG.TextSize, Enum.Font.GothamBold, Vector2.new(math.huge, math.huge)
         )
-        local width = math.max(
-            textBounds.X + (CONFIG.PaddingX * 2) + CONFIG.DotSize + 10 + 12,
-            100
-        )
+        local width = math.max(textBounds.X + (CONFIG.PaddingX * 2) + CONFIG.DotSize + 10 + 12, 100)
 
-        -- Animacja IN
+        -- IN
         NeverLose.PlayAnimate(Frame, TweenInfo.new(0.35, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
             BackgroundTransparency = CONFIG.BackgroundTransparency,
             Size = UDim2.new(0, width, 0, CONFIG.Height),
         })
-
         NeverLose.PlayAnimate(Stroke, TweenInfo.new(0.3), { Transparency = CONFIG.BorderTransparency })
         NeverLose.PlayAnimate(Dot, TweenInfo.new(0.3), { BackgroundTransparency = 0 })
         NeverLose.PlayAnimate(DotGlow, TweenInfo.new(0.3), { ImageTransparency = 0.35 })
         NeverLose.PlayAnimate(TextLabel, TweenInfo.new(0.3), { TextTransparency = 0 })
 
-        -- Animacja OUT po Duration
+        -- OUT
         task.delay(CONFIG.Duration, function()
             if not Frame or not Frame.Parent then return end
 
@@ -7223,7 +7395,6 @@ function NeverLose:CreateToggleNotifier()
                 BackgroundTransparency = 1,
                 Size = UDim2.new(0, 0, 0, CONFIG.Height),
             })
-
             NeverLose.PlayAnimate(Stroke, TweenInfo.new(0.25), { Transparency = 1 })
             NeverLose.PlayAnimate(Dot, TweenInfo.new(0.25), { BackgroundTransparency = 1 })
             NeverLose.PlayAnimate(DotGlow, TweenInfo.new(0.25), { ImageTransparency = 1 })
@@ -7237,12 +7408,17 @@ function NeverLose:CreateToggleNotifier()
         end)
     end
 
-    -- API dodatkowe
+    -- ==========================================================
+    --  API DODATKOWE
+    -- ==========================================================
     function Notifier:SetEnabled(state)
         Notifier.Enabled = state == true
+        Container.Visible = state == true
         if not Notifier.Enabled then
             for _, child in pairs(Container:GetChildren()) do
-                if child:IsA("Frame") then child:Destroy() end
+                if child:IsA("Frame") and child ~= Bar then
+                    child:Destroy()
+                end
             end
         end
     end
@@ -7256,12 +7432,17 @@ function NeverLose:CreateToggleNotifier()
         Container.Position = pos
     end
 
+    function Notifier:SetBrandName(name)
+        pcall(function()
+            brandText.Text = tostring(name or "Muminek")
+        end)
+    end
+
     function Notifier:Destroy()
         Container:Destroy()
         NeverLose.__ToggleNotifierCache = nil
     end
 
-    -- Cache
     NeverLose.__ToggleNotifierCache = Notifier
 
     return Notifier
