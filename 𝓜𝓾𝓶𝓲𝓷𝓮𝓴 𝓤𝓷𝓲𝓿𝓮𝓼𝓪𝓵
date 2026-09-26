@@ -1,8 +1,4 @@
--- =========================================
---          Muminek Hub Univesal
--- =========================================
-
-local MuminekHub = loadstring(game:HttpGet("https://raw.githubusercontent.com/zethvmain-eng/qmcixnrib19fMhR0MuminekHub0HEHD98jJ/refs/heads/main/%F0%9D%93%9C%F0%9D%93%BE%F0%9D%93%B6%F0%9D%93%B2%F0%9D%93%B7%F0%9D%93%AE%F0%9D%93%B4%20%F0%9D%93%9B%F0%9D%93%B2%F0%9D%93%AB%F0%9D%93%AA%F0%9D%93%BB%F0%9D%94%82"))()
+    local MuminekHub = loadstring(game:HttpGet("https://raw.githubusercontent.com/zethvmain-eng/qmcixnrib19fMhR0MuminekHub0HEHD98jJ/refs/heads/main/%F0%9D%93%9C%F0%9D%93%BE%F0%9D%93%B6%F0%9D%93%B2%F0%9D%93%B7%F0%9D%93%AE%F0%9D%93%B4%20%F0%9D%93%9B%F0%9D%93%B2%F0%9D%93%AB%F0%9D%93%AA%F0%9D%93%BB%F0%9D%94%82"))()
 
     -- == Zabezpieczenie == --
     local Logging = (MuminekHub.CreateLogger and MuminekHub:CreateLogger()) or {
@@ -17,6 +13,7 @@ local MuminekHub = loadstring(game:HttpGet("https://raw.githubusercontent.com/ze
     local Notification = MuminekHub:CreateNotification();
     local Logging = MuminekHub:CreateLogger();
     local Hotkeys = MuminekHub:CreateHotkeys()
+    local ToggleNotifier = MuminekHub:CreateToggleNotifier()
     local UserInputService = game:GetService("UserInputService")
     local RunService  = game:GetService("RunService")
     local Players     = game:GetService("Players")
@@ -24,6 +21,7 @@ local MuminekHub = loadstring(game:HttpGet("https://raw.githubusercontent.com/ze
     local DEBUG_MODE = false
     MuminekHub.GlobalLogo = "rbxassetid://89791569371168"
     _G.MuminekHub = MuminekHub
+    getgenv().MuminekToggleNotifier = ToggleNotifier
     getgenv().MuminekHub    = MuminekHub
     getgenv().MuminekHub    = MuminekHub
     getgenv().Indicators     = Indicators
@@ -31,6 +29,10 @@ local MuminekHub = loadstring(game:HttpGet("https://raw.githubusercontent.com/ze
     getgenv().Logging       = Logging
     getgenv().MuminekHotkeys = Hotkeys
     Hotkeys:AddHotkey({ Name = "Hotkey", Icon = "key-command", Key  = " ", Bold = true, })
+    if MuminekHub.ScreenGui then
+    MuminekHub.ScreenGui.DisplayOrder = 999
+    MuminekHub.ScreenGui.Enabled = true end
+
 
     -- == Loading Screen == --
         Notification.new({
@@ -42,6 +44,163 @@ local MuminekHub = loadstring(game:HttpGet("https://raw.githubusercontent.com/ze
     wait(3)
 
 
+    -- == System Obecnosci - Przez Komunikator == --
+
+    do
+        local PRESENCE_URL = "https://muminek-chat.onrender.com"
+        local HEARTBEAT_INTERVAL = 10
+        local POLL_INTERVAL = 2
+        local TIMEOUT_SECONDS = 20
+
+        -- Klient HTTP (działa z większością executorów)
+        local rawRequest = (syn and syn.request)
+            or (xeno and xeno.request)
+            or (http and http.request)
+            or http_request
+            or request
+            or (fluxus and fluxus.request)
+            or (krnl and krnl.request)
+
+        if not rawRequest then
+            -- Brak wsparcia HTTP – pomiń obecność
+            return
+        end
+
+        local HttpService = game:GetService("HttpService")
+        local Players = game:GetService("Players")
+        local LocalPlayer = Players.LocalPlayer
+
+        local function request(options)
+            local reqData = {
+                Url = options.Url,
+                Method = options.Method or "GET",
+                Headers = options.Headers or {},
+                Body = options.Body
+            }
+            local ok, res = pcall(function() return rawRequest(reqData) end)
+            if ok and res then
+                return res.Body or res.body or res.Response or res.data
+            end
+            return nil
+        end
+
+        local Presence = {
+            ActiveUsers = {},
+            LastId = 0,
+        }
+
+        -- Powiadomienie – używa ToggleNotifier
+        local function notify(text, isOnline)
+            local tn = getgenv().MuminekToggleNotifier
+            if tn and tn.Show then
+                pcall(function() tn:Show(text, isOnline) end)
+            end
+            if Logging and Logging.new then
+                pcall(function()
+                    Logging.new(isOnline and "person-plus" or "person-arrow-from-bottom-right", text, 4)
+                end)
+            end
+        end
+
+        -- Wyślij sygnał
+        local function sendSignal(kind)
+            task.spawn(function()
+                pcall(function()
+                    request({
+                        Url = PRESENCE_URL .. "/send",
+                        Method = "POST",
+                        Headers = { ["Content-Type"] = "application/json" },
+                        Body = HttpService:JSONEncode({
+                            senderName = LocalPlayer.Name,
+                            userId = LocalPlayer.UserId,
+                            text = "__PRESENCE__:" .. kind,
+                            isPresence = true,
+                            presenceKind = kind
+                        })
+                    })
+                end)
+            end)
+        end
+
+        -- Start: poinformuj innych że jesteśmy online
+        task.delay(2, function()
+            sendSignal("join")
+        end)
+
+        -- Heartbeat co 10s
+        task.spawn(function()
+            while task.wait(HEARTBEAT_INTERVAL) do
+                sendSignal("heartbeat")
+            end
+        end)
+
+        -- Poinformuj o wyjściu (client-side)
+        -- Roblox nie pozwala BindToClose na kliencie, więc wysyłamy sygnał
+        -- gdy LocalPlayer zostanie odłączony od gry (teleport, disconnect)
+        pcall(function()
+            LocalPlayer.AncestryChanged:Connect(function(_, parent)
+                if not parent then
+                    sendSignal("leave")
+                end
+            end)
+        end)
+
+        -- Dodatkowo: gdy gracz zostanie teleportowany
+        pcall(function()
+            LocalPlayer.OnTeleport:Connect(function(state)
+                if state == Enum.TeleportState.Started then
+                    sendSignal("leave")
+                end
+            end)
+        end)
+
+        -- Polling: sprawdzaj obecność innych co 2s
+        task.spawn(function()
+            while task.wait(POLL_INTERVAL) do
+                local url = PRESENCE_URL .. "/messages?since=" .. tostring(Presence.LastId)
+                local body = request({ Url = url, Method = "GET" })
+
+                if body and typeof(body) == "string" and #body > 0 then
+                    local ok, msgs = pcall(function() return HttpService:JSONDecode(body) end)
+                    if ok and typeof(msgs) == "table" then
+                        for _, msg in ipairs(msgs) do
+                            local numericId = tonumber(msg.id)
+                            if numericId and numericId > Presence.LastId then
+                                Presence.LastId = numericId
+
+                                local sender = tostring(msg.senderName or "?")
+                                local txt = tostring(msg.text or "")
+
+                                if sender ~= LocalPlayer.Name then
+                                    local kind = msg.presenceKind or txt:match("__PRESENCE__:(%w+)")
+
+                                    if kind == "join" then
+                                        Presence.ActiveUsers[sender] = tick()
+                                        notify(sender .. " jest Online", true)
+
+                                    elseif kind == "heartbeat" then
+                                        Presence.ActiveUsers[sender] = tick()
+
+                                    elseif kind == "leave" then
+                                        Presence.ActiveUsers[sender] = nil
+                                        notify(sender .. " jest Offline", false)
+                                    end end end end end end
+
+                -- Timeout – brak heartbeatu przez TIMEOUT_SECONDS = offline
+                for user, lastTime in pairs(Presence.ActiveUsers) do
+                    if tick() - lastTime > TIMEOUT_SECONDS then
+                        Presence.ActiveUsers[user] = nil
+                        notify(user .. " jest Offline", false)
+                    end end end end)
+
+        -- Globalny dostęp
+        getgenv().MuminekPresence = Presence
+
+        if DEBUG_MODE and Logging and Logging.new then
+            Logging.new("person-plus", "System obecności załadowany", 3)
+        end
+    end
+
     -- == Rangi - Przez HWID (GeyHwid) == --
     do
     local AUTHORIZED_HWIDS = {
@@ -49,7 +208,7 @@ local MuminekHub = loadstring(game:HttpGet("https://raw.githubusercontent.com/ze
         ["TWOJE_HWID_PREMIUM"] = "Premium", -- Premium
     }
 
-    -- == Domyślne wartości ==
+    -- Domyślne wartości
     _G.PlayerRank    = "User"
     _G.IsRanked      = false
     _G.UserRank      = true
@@ -57,7 +216,7 @@ local MuminekHub = loadstring(game:HttpGet("https://raw.githubusercontent.com/ze
     _G.ModeratorRank = false
     _G.PremiumRank   = false
     _G.HWID          = nil
-    -- == Pobierz HWID ==
+    -- Pobierz HWID
     local hwid = nil
     if gethwid then
         local ok, result = pcall(gethwid)
@@ -71,17 +230,13 @@ local MuminekHub = loadstring(game:HttpGet("https://raw.githubusercontent.com/ze
     if not hwid then
         if game:GetService("RbxAnalyticsService") then
             local ok, result = pcall(function()
-                return game:GetService("RbxAnalyticsService"):GetClientId()
-            end)
+            return game:GetService("RbxAnalyticsService"):GetClientId() end)
             if ok and result then
-                hwid = result
-                _G.HWID = hwid
-            end
-        end
-    end
-
-    -- == Sprawdź HWID ==
-    if hwid and AUTHORIZED_HWIDS[hwid] then
+            hwid = result
+            _G.HWID = hwid
+            end end end
+    -- Sprawdź HWID 
+        if hwid and AUTHORIZED_HWIDS[hwid] then
         local rank = AUTHORIZED_HWIDS[hwid]
         _G.PlayerRank = rank
         _G.IsRanked   = true
@@ -108,15 +263,15 @@ local MuminekHub = loadstring(game:HttpGet("https://raw.githubusercontent.com/ze
                 Logging.new("person", "Brak rangi – tryb podstawowy", 3)
             end) end end
 
-    -- == Wystaw globalnie ==
-    getgenv().PlayerRank    = _G.PlayerRank
-    getgenv().IsRanked      = _G.IsRanked
-    getgenv().UserRank      = _G.UserRank
-    getgenv().OwnerRank     = _G.OwnerRank
-    getgenv().ModeratorRank = _G.ModeratorRank
-    getgenv().PremiumRank   = _G.PremiumRank
-    getgenv().HWID          = _G.HWID
-end
+        -- == Wystaw globalnie ==
+        getgenv().PlayerRank    = _G.PlayerRank
+        getgenv().IsRanked      = _G.IsRanked
+        getgenv().UserRank      = _G.UserRank
+        getgenv().OwnerRank     = _G.OwnerRank
+        getgenv().ModeratorRank = _G.ModeratorRank
+        getgenv().PremiumRank   = _G.PremiumRank
+        getgenv().HWID          = _G.HWID
+    end
 
     -- == Creating Window == --
     local window = MuminekHub:CreateWindow({
@@ -132,10 +287,7 @@ end
     -- Usuwanie Folderu Configa --
     if isfolder("Muminek-HubConfigs") then
     for _, file in pairs(listfiles("Muminek-HubConfigs")) do
-        delfile(file)
-    end
-    delfolder("Muminek-HubConfigs")
-    end
+    delfile(file) end delfolder("Muminek-HubConfigs") end
 
     -- Expires Dla Rank --
     if UserRank then window:SetAccount({Expires = "User"}) end 
@@ -170,10 +322,9 @@ end
     CustomWatermark:SetVisible(true) end
 
     -- 3. Bloki informacyjne
-    local PingBlock = CustomWatermark:AddBlock("chart-four-vertical-bars", "0ms")
-    local FPSBlock  = CustomWatermark:AddBlock("chart-line", "FPS: 0")
-    local HPBlock   = CustomWatermark:AddBlock("heart", "HP: 100")
-    local HubToggle = CustomWatermark:AddBlock("cube-vertexes", "Muminek Hub") 
+    local PlayerBlock = CustomWatermark:AddBlock("person", LocalPlayer.DisplayName)
+    local HPBlock     = CustomWatermark:AddBlock("heart", "HP: 100")
+    local HubToggle   = CustomWatermark:AddBlock("cube-vertexes", "Muminek Hub")
     HubToggle:Input(function() window:ToggleInterface() end)
 
     -- 4. Ustawienia aktualizacji
@@ -190,23 +341,6 @@ end
 
     -- 5. Główna pętla
     RunService.RenderStepped:Connect(function(dt)
-
-    -- FPS COUNTER (aktualizacja co 1s)
-    fpsCounter = fpsCounter + 1
-    fpsTimer = fpsTimer + dt
-    if fpsTimer >= FPS_UPDATE_INTERVAL then
-        FPSBlock:SetText("FPS: " .. tostring(fpsCounter))
-        fpsCounter = 0
-        fpsTimer = 0
-    end
-
-    -- PING (aktualizacja co 3s)
-    pingTimer = pingTimer + dt
-    if pingTimer >= PING_UPDATE_INTERVAL then
-        pingTimer = 0
-        local ping = math.floor(LocalPlayer:GetNetworkPing() * 1000)
-        PingBlock:SetText(tostring(ping) .. "ms")
-    end
 
     -- HP (aktualizacja co 0.2s)
     hpTimer = hpTimer + dt
@@ -265,7 +399,7 @@ end
     Excutors:AddLabel('Xeno     | Fuly Working  ', true)
     Excutors:AddLabel('Solara   | Fuly Working  ', true)
     Excutors:AddLabel('Madium   | Fuly Working  ', true)
-    Excutors:AddLabel('Real | Working       ', true)
+    Excutors:AddLabel('JJsploit | Working       ', true)
 
     local Premium = ChangeLog:AddSection({ Name = "Premium Users", Position = 'right' })
 
@@ -797,7 +931,7 @@ end
     })
 
 -- ----------------------------------------
---    AIMBOT (z integracją Hotkeys HUD v2)
+--    AIMBOT (zoptymalizowany + Hotkeys HUD)
 -- ----------------------------------------
 do
     local VIM = game:GetService("VirtualInputManager")
@@ -809,7 +943,7 @@ do
 
     local CombatSection = Combat:AddSection({ Name = "AimBot", Position = 'left' })
 
-    -- == Konfiguracja Aimbota == --
+    -- == Konfiguracja == --
     local settings = {
         enabled = false,
         fov = 360,
@@ -818,6 +952,7 @@ do
         teamCheck = false,
         aimbotKey = Enum.UserInputType.MouseButton2,
         toggleKey = Enum.KeyCode.CapsLock,
+        toggleKeyStr = "CapsLock",
         circleColor = Color3.fromRGB(255, 0, 0),
         circleThickness = 2,
         circleFilled = false,
@@ -831,11 +966,10 @@ do
         recoilControl = false,
         recoilAmount = 2,
         drawFOV = true,
-        smoothType = "Lerp",
         useMouseMovement = false,
     }
 
-    -- == Rysowanie Kola == --
+    -- == Drawing == --
     local FOVCircle = Drawing.new("Circle")
     FOVCircle.Thickness = settings.circleThickness
     FOVCircle.NumSides = 64
@@ -862,15 +996,20 @@ do
     PredictionDot.Color = Color3.fromRGB(255, 255, 0)
     PredictionDot.Visible = false
 
-    -- == Zmienne Robocze == --
+    -- == Zmienne == --
     local aimbotEnabled = false
     local lockedTarget = nil
+    local lockedPart = nil
     local currentTarget = nil
     local mouseBlocked = false
     local toggleUI = nil
     local hotkeyName = "Aimbot"
+    local aimConnection = nil
 
-    -- == Helper: konwersja klucza na string dla HUD == --
+    -- == Cache graczy (odświeżany co 1s) == --
+    local PlayerCache = { list = {}, time = 0 }
+
+    -- == Helper: konwersja klucza na string == --
     local function keyToString(k)
         if typeof(k) == "EnumItem" then return k.Name end
         local s = tostring(k)
@@ -894,17 +1033,17 @@ do
         end)
     end
 
-    -- == Synchronizacja HUD (NOWY SYSTEM) == --
+    -- == Synchronizacja Hotkeys HUD == --
     local function syncHotkeyHUD(state)
         local HUD = getgenv().MuminekHotkeys
         if not HUD then return end
 
         if state then
-            HUD:RemoveHotkey(hotkeyName)   -- usuń duplikat
+            HUD:RemoveHotkey(hotkeyName)
             HUD:AddHotkey({
                 Name = hotkeyName,
                 Icon = "crosshairs",
-                Key  = keyToString(settings.toggleKey),
+                Key  = settings.toggleKeyStr,
                 Bold = true,
             })
         else
@@ -912,55 +1051,79 @@ do
         end
     end
 
-    -- == Aktualizacja bindu w HUD == --
     local function updateHotkeyBind(newKey)
         local HUD = getgenv().MuminekHotkeys
         if not HUD then return end
-        HUD:UpdateKey(hotkeyName, keyToString(newKey))
+        HUD:UpdateKey(hotkeyName, settings.toggleKeyStr)
     end
 
-    -- == Ustawianie stanu aimbota == --
+    -- == Toggle Notifier == --
+    local function notify(state)
+        if getgenv().MuminekToggleNotifier then
+            getgenv().MuminekToggleNotifier:Show("Aimbot toggled " .. (state and "on" or "off"), state)
+        end
+    end
+
+    -- == Start / Stop pętli == --
+    local function startAimLoop()
+        if aimConnection then
+            aimConnection:Disconnect()
+            aimConnection = nil
+        end
+        aimConnection = RunService.Heartbeat:Connect(function()
+            if not aimbotEnabled then return end
+            aimLoop()
+        end)
+    end
+
+    -- == Ustawianie stanu == --
     local function setAimbotState(state)
+        if aimbotEnabled == state then return end
         aimbotEnabled = state
         syncToggleUI(state)
         syncHotkeyHUD(state)
+        notify(state)
         FOVCircle.Visible = state and settings.drawFOV
 
         if not state then
             SnapLine.Visible = false
             HeadDot.Visible = false
             PredictionDot.Visible = false
+            FOVCircle.Visible = false
             lockedTarget = nil
+            lockedPart = nil
+            currentTarget = nil
+            if aimConnection then
+                aimConnection:Disconnect()
+                aimConnection = nil
+            end
         else
             startAimLoop()
         end
     end
 
-    -- == Pobieranie części ciała celu == --
+    -- == Pobieranie części ciała == --
+    local PartMap = {
+        Head = {"Head"},
+        Neck = {"Neck", "UpperTorso"},
+        UpperTorso = {"UpperTorso"},
+        LowerTorso = {"LowerTorso"},
+        HumanoidRootPart = {"HumanoidRootPart"},
+        LeftArm = {"LeftArm", "Left Arm"},
+        RightArm = {"RightArm", "Right Arm"},
+        LeftLeg = {"LeftLeg", "Left Leg"},
+        RightLeg = {"RightLeg", "Right Leg"},
+    }
+
     local function getAimPart(character)
         if not character then return nil end
-        local partName = settings.aimPart
-        if partName == "Head" then
-            return character:FindFirstChild("Head")
-        elseif partName == "Neck" then
-            return character:FindFirstChild("Neck") or character:FindFirstChild("UpperTorso")
-        elseif partName == "UpperTorso" then
-            return character:FindFirstChild("UpperTorso")
-        elseif partName == "LowerTorso" then
-            return character:FindFirstChild("LowerTorso")
-        elseif partName == "HumanoidRootPart" then
-            return character:FindFirstChild("HumanoidRootPart")
-        elseif partName == "LeftArm" then
-            return character:FindFirstChild("LeftArm") or character:FindFirstChild("Left Arm")
-        elseif partName == "RightArm" then
-            return character:FindFirstChild("RightArm") or character:FindFirstChild("Right Arm")
-        elseif partName == "LeftLeg" then
-            return character:FindFirstChild("LeftLeg") or character:FindFirstChild("Left Leg")
-        elseif partName == "RightLeg" then
-            return character:FindFirstChild("RightLeg") or character:FindFirstChild("Right Leg")
-        else
-            return character:FindFirstChild("Head") or character:FindFirstChild("HumanoidRootPart")
+        local names = PartMap[settings.aimPart]
+        if not names then return character:FindFirstChild("Head") end
+        for i = 1, #names do
+            local p = character:FindFirstChild(names[i])
+            if p then return p end
         end
+        return character:FindFirstChild("Head")
     end
 
     local function getTargetVelocity(targetChar)
@@ -969,35 +1132,48 @@ do
         return hrp.Velocity
     end
 
-    local function extrapolatePosition(position, velocity, time)
-        return position + velocity * time
-    end
-
-    local function isVisible(origin, targetPos, targetChar)
+    -- == Widoczność == --
+    local function isVisible(origin, targetPos, targetChar, myChar)
         if not settings.visibilityCheck then return true end
         local params = RaycastParams.new()
-        local filter = {LocalPlayer.Character, targetChar}
-        params.FilterDescendantsInstances = filter
+        params.FilterDescendantsInstances = {myChar, targetChar}
         params.FilterType = Enum.RaycastFilterType.Blacklist
-        local result = workspace:Raycast(origin, (targetPos - origin).Unit * (targetPos - origin).Magnitude, params)
+        params.IgnoreWater = true
+        local result = workspace:Raycast(origin, targetPos - origin, params)
         return not result
     end
 
     -- == Znajdowanie celu == --
     local function findTarget()
         local char = LocalPlayer.Character
-        if not char then return nil end
+        if not char then return nil, nil end
         local hrp = char:FindFirstChild("HumanoidRootPart")
-        if not hrp then return nil end
+        if not hrp then return nil, nil end
 
         local cam = workspace.CurrentCamera
-        if not cam then return nil end
+        if not cam then return nil, nil end
+
+        -- Cache graczy (co 1s)
+        if tick() - PlayerCache.time > 1 then
+            PlayerCache.list = Players:GetPlayers()
+            PlayerCache.time = tick()
+        end
 
         local screenCenter = Vector2.new(cam.ViewportSize.X / 2, cam.ViewportSize.Y / 2)
-        local bestTarget = nil
-        local bestScore = math.huge
+        local lookVec = cam.CFrame.LookVector
         local origin = cam.CFrame.Position
+        local myHrpPos = hrp.Position
 
+        -- Precompute próg FOV (bez acos)
+        -- FOV: jeśli >= 360° → pełna sfera (żaden filtr)
+        local FOVDot
+        if settings.fov >= 360 then
+            FOVDot = -1  -- dowolny kierunek pasuje
+        else
+            FOVDot = math.cos(math.rad(settings.fov) * 0.5)
+        end
+
+        -- Aim lock fast-path
         if settings.aimLock and lockedTarget then
             local tChar = lockedTarget.Character
             if tChar and tChar:IsDescendantOf(workspace) then
@@ -1005,93 +1181,89 @@ do
                 if aimPart then
                     local hum = tChar:FindFirstChildOfClass("Humanoid")
                     if hum and hum.Health > 0 then
-                        local dist = (aimPart.Position - hrp.Position).Magnitude
-                        if dist <= settings.maxRange then
-                            return lockedTarget
+                        if (aimPart.Position - myHrpPos).Magnitude <= settings.maxRange then
+                            return lockedTarget, aimPart
                         end
                     end
                 end
             end
             lockedTarget = nil
+            lockedPart = nil
         end
 
-        for _, player in pairs(Players:GetPlayers()) do
-            if player == LocalPlayer then continue end
-            if settings.teamCheck and player.Team == LocalPlayer.Team then continue end
+        local bestTarget, bestPart = nil, nil
+        local bestScore = math.huge
 
-            local tChar = player.Character
-            if not tChar then continue end
-            local hum = tChar:FindFirstChildOfClass("Humanoid")
-            if not hum or hum.Health <= 0 then continue end
-
-            local aimPart = getAimPart(tChar)
-            if not aimPart then continue end
-
-            local dist = (aimPart.Position - hrp.Position).Magnitude
-            if dist > settings.maxRange then continue end
-
-            local dirToTarget = (aimPart.Position - origin).Unit
-            local angle = math.deg(math.acos(cam.CFrame.LookVector:Dot(dirToTarget)))
-            if angle > settings.fov / 2 then continue end
-
-            if not isVisible(origin, aimPart.Position, tChar) then continue end
-
-            local aimPos = aimPart.Position
-            if settings.extrapolation then
-                local vel = getTargetVelocity(tChar)
-                local predictedPos = extrapolatePosition(aimPos, vel, settings.extrapolationAmount)
-                local predDir = (predictedPos - origin).Unit
-                local predAngle = math.deg(math.acos(cam.CFrame.LookVector:Dot(predDir)))
-                if predAngle <= settings.fov / 2 then
-                    aimPos = predictedPos
+        for i = 1, #PlayerCache.list do
+            local player = PlayerCache.list[i]
+            if player ~= LocalPlayer then
+                local skip = false
+                if settings.teamCheck and player.Team == LocalPlayer.Team then
+                    skip = true
                 end
-            end
+                if not skip then
+                    local tChar = player.Character
+                    if tChar then
+                        local hum = tChar:FindFirstChildOfClass("Humanoid")
+                        if hum and hum.Health > 0 then
+                            local aimPart = getAimPart(tChar)
+                            if aimPart then
+                                local rel = aimPart.Position - myHrpPos
+                                local dist = rel.Magnitude
+                                if dist <= settings.maxRange then
+                                    local dirToTarget = (aimPart.Position - origin).Unit
+                                    if lookVec:Dot(dirToTarget) >= FOVDot then
+                                        if isVisible(origin, aimPart.Position, tChar, char) then
+                                            local aimPos = aimPart.Position
+                                            if settings.extrapolation then
+                                                local vel = getTargetVelocity(tChar)
+                                                aimPos = aimPos + vel * settings.extrapolationAmount
+                                            end
 
-            local score = 0
-            if settings.targetPriority == "FOV" then
-                local screenPos = cam:WorldToViewportPoint(aimPos)
-                local mouseDist = (Vector2.new(screenPos.X, screenPos.Y) - screenCenter).Magnitude
-                score = mouseDist * 1.0 + dist * 0.1
-            elseif settings.targetPriority == "Distance" then
-                score = dist
-            elseif settings.targetPriority == "Health" then
-                score = hum.Health
-            end
+                                            local score
+                                            if settings.targetPriority == "FOV" then
+                                                local screenPos = cam:WorldToViewportPoint(aimPos)
+                                                score = (Vector2.new(screenPos.X, screenPos.Y) - screenCenter).Magnitude + dist * 0.1
+                                            elseif settings.targetPriority == "Distance" then
+                                                score = dist
+                                            else
+                                                score = hum.Health
+                                            end
 
-            if score < bestScore then
-                bestScore = score
-                bestTarget = player
+                                            if score < bestScore then
+                                                bestScore = score
+                                                bestTarget = player
+                                                bestPart = aimPart
+                                            end
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
             end
         end
 
         lockedTarget = bestTarget
-        return bestTarget
+        lockedPart = bestPart
+        return bestTarget, bestPart
     end
 
-    -- == Wykonanie celowania == --
-    local function performAim(target)
-        if not target then return false end
-        local tChar = target.Character
-        if not tChar then return false end
-
-        local aimPart = getAimPart(tChar)
-        if not aimPart then return false end
+    -- == Celowanie == --
+    local function performAim(target, aimPart)
+        if not target or not aimPart then return end
 
         local origin = Camera.CFrame.Position
         local targetPos = aimPart.Position
 
         if settings.extrapolation then
-            local vel = getTargetVelocity(tChar)
-            targetPos = extrapolatePosition(targetPos, vel, settings.extrapolationAmount)
+            local tChar = target.Character
+            if tChar then
+                local vel = getTargetVelocity(tChar)
+                targetPos = targetPos + vel * settings.extrapolationAmount
+            end
         end
-
-        if not isVisible(origin, targetPos, tChar) then return false end
-
-        local dirToTarget = (targetPos - origin).Unit
-        local angle = math.deg(math.acos(Camera.CFrame.LookVector:Dot(dirToTarget)))
-        if angle > settings.fov / 2 then return false end
-
-        local targetCFrame = CFrame.new(origin, targetPos)
 
         if settings.useMouseMovement then
             local screenPos = Camera:WorldToViewportPoint(targetPos)
@@ -1106,17 +1278,16 @@ do
                 )
             end
         else
+            local targetCFrame = CFrame.new(origin, targetPos)
             if settings.smooth <= 1 then
                 Camera.CFrame = targetCFrame
             else
-                local lerpFactor = 1 / settings.smooth
-                Camera.CFrame = Camera.CFrame:Lerp(targetCFrame, lerpFactor)
+                Camera.CFrame = Camera.CFrame:Lerp(targetCFrame, 1 / settings.smooth)
             end
         end
-
-        return true
     end
 
+    -- == Recoil Control == --
     local function applyRecoilControl()
         if not settings.recoilControl then return end
         if mouseBlocked then return end
@@ -1127,28 +1298,27 @@ do
         mouseBlocked = false
     end
 
-    -- == Pętla główna == --
-    local aimConnection = nil
-
-    local function aimLoop()
-        if not aimbotEnabled then return end
-
+    -- == Główna pętla == --
+    function aimLoop()
         local screenCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
 
-        if settings.drawFOV then
+        -- FOV Circle
+        if settings.drawFOV and aimbotEnabled then
             FOVCircle.Position = screenCenter
-            FOVCircle.Radius = settings.fov / 2
-            FOVCircle.Visible = true
+            -- Bezpieczne skalowanie: 1 stopień ≈ 1px promienia
+            FOVCircle.Radius = math.clamp(settings.fov / 2, 30, 1400)
             FOVCircle.Color = settings.circleColor
             FOVCircle.Thickness = settings.circleThickness
             FOVCircle.Filled = settings.circleFilled
             FOVCircle.Transparency = settings.circleTransparency
+            FOVCircle.Visible = true
         else
             FOVCircle.Visible = false
         end
 
-        local isPressed = false
-        if tostring(settings.aimbotKey):find("MouseButton") then
+        -- Sprawdź klawisz
+        local isPressed
+        if typeof(settings.aimbotKey) == "EnumItem" and settings.aimbotKey.EnumType == Enum.UserInputType then
             isPressed = UIS:IsMouseButtonPressed(settings.aimbotKey)
         else
             isPressed = UIS:IsKeyDown(settings.aimbotKey)
@@ -1162,38 +1332,34 @@ do
             return
         end
 
-        local target = findTarget()
+        local target, aimPart = findTarget()
         currentTarget = target
 
-        if target and target.Character then
-            local aimPart = getAimPart(target.Character)
-            if aimPart then
-                local targetPos = aimPart.Position
-
-                if settings.extrapolation then
-                    local vel = getTargetVelocity(target.Character)
-                    local predPos = extrapolatePosition(targetPos, vel, settings.extrapolationAmount)
-                    targetPos = predPos
-                    local screenPos = Camera:WorldToViewportPoint(predPos)
-                    PredictionDot.Position = Vector2.new(screenPos.X, screenPos.Y)
-                    PredictionDot.Visible = true
-                else
-                    PredictionDot.Visible = false
-                end
-
+        if target and aimPart then
+            local targetPos = aimPart.Position
+            if settings.extrapolation and target.Character then
+                local vel = getTargetVelocity(target.Character)
+                targetPos = targetPos + vel * settings.extrapolationAmount
                 local screenPos = Camera:WorldToViewportPoint(targetPos)
-                local sPos = Vector2.new(screenPos.X, screenPos.Y)
-                SnapLine.From = screenCenter
-                SnapLine.To = sPos
-                SnapLine.Visible = true
-                SnapLine.Color = settings.circleColor
-
-                HeadDot.Position = sPos
-                HeadDot.Visible = true
-                HeadDot.Color = settings.circleColor
-
-                performAim(target)
+                PredictionDot.Position = Vector2.new(screenPos.X, screenPos.Y)
+                PredictionDot.Visible = true
+            else
+                PredictionDot.Visible = false
             end
+
+            local screenPos = Camera:WorldToViewportPoint(targetPos)
+            local sPos = Vector2.new(screenPos.X, screenPos.Y)
+
+            SnapLine.From = screenCenter
+            SnapLine.To = sPos
+            SnapLine.Color = settings.circleColor
+            SnapLine.Visible = true
+
+            HeadDot.Position = sPos
+            HeadDot.Color = settings.circleColor
+            HeadDot.Visible = true
+
+            performAim(target, aimPart)
         else
             SnapLine.Visible = false
             HeadDot.Visible = false
@@ -1201,36 +1367,28 @@ do
         end
     end
 
-    function startAimLoop()
-        if aimConnection then
-            aimConnection:Disconnect()
-            aimConnection = nil
-        end
-        aimConnection = RunService.RenderStepped:Connect(aimLoop)
-    end
-
-    -- == Nasłuch RCS == --
+    -- == Input handler (połączony) == --
     UIS.InputBegan:Connect(function(input, gpe)
         if gpe then return end
+
+        -- Recoil Control (przed sprawdzeniem focusa)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             if settings.recoilControl and aimbotEnabled then
                 task.spawn(applyRecoilControl)
             end
         end
-    end)
 
-    -- == Nasłuch Binda (toggle key) == --
-    UIS.InputBegan:Connect(function(input, gpe)
-        if gpe then return end
-        if UIS:GetFocusedTextBox() then return end
-        local inputKeyStr = tostring(input.KeyCode)
-        local toggleKeyStr = tostring(settings.toggleKey)
-        if inputKeyStr == toggleKeyStr or input.UserInputType == settings.toggleKey then
-            setAimbotState(not aimbotEnabled)
+        -- Toggle bind
+        if not UIS:GetFocusedTextBox() then
+            if input.KeyCode == settings.toggleKey or input.UserInputType == settings.toggleKey then
+                setAimbotState(not aimbotEnabled)
+            end
         end
     end)
 
-    -- == Interfejs w menu == --
+    -- ============================================================
+    --  INTERFEJS
+    -- ============================================================
     local MainLabel = CombatSection:AddLabel('Aimbot')
 
     local AimbotToggleUI = MainLabel:AddToggle({
@@ -1244,7 +1402,6 @@ do
 
     MainLabel:ToolTip("Namierza celownik na przeciwnika\nStrzelanie: LPM\nTrzymanie klawisza: celowanie")
 
-    -- === OPCJE ===
     local AimbotOptions = MainLabel:AddOption()
 
     AimbotOptions:AddLabel("Cel"):AddDropdown({
@@ -1254,6 +1411,7 @@ do
         Callback = function(v)
             settings.aimPart = v
             lockedTarget = nil
+            lockedPart = nil
         end
     })
 
@@ -1263,13 +1421,13 @@ do
         Callback = function(v) settings.smooth = v end
     })
 
-    -- == BIND (zaktualizowany o nowy HUD) == --
     AimbotOptions:AddLabel("Bind"):AddKeybind({
         Default = Enum.KeyCode.CapsLock,
         Flag = "Aimbot-Bind",
         Callback = function(key)
             settings.toggleKey = key
-            updateHotkeyBind(key)   -- ← aktualizuje klawisz w HUD
+            settings.toggleKeyStr = keyToString(key)
+            updateHotkeyBind(key)
         end
     })
 
@@ -1317,7 +1475,7 @@ do
         Flag = "Aimbot_AimLock",
         Callback = function(v)
             settings.aimLock = v
-            if not v then lockedTarget = nil end
+            if not v then lockedTarget = nil; lockedPart = nil end
         end
     })
 
@@ -1355,12 +1513,12 @@ do
     })
 
     -- === USTAWIENIA TECHNICZNE ===
-    CombatSection:AddLabel('FOV'):AddSlider({
-        Min = 10, Max = 360, Default = 360,
+    CombatSection:AddLabel('FOV (°)'):AddSlider({
+        Min = 10, Max = 1080, Default = 360, Rounding = 0,
         Flag = "Field-of-View-Aimbot",
         Callback = function(v)
             settings.fov = v
-            FOVCircle.Radius = v / 2
+            FOVCircle.Radius = math.min(v / 2, 2000)
         end
     })
 
@@ -1380,19 +1538,14 @@ do
     LocalPlayer.CharacterAdded:Connect(function()
         if aimbotEnabled then
             lockedTarget = nil
+            lockedPart = nil
             currentTarget = nil
-            if aimConnection then
-                aimConnection:Disconnect()
-                aimConnection = nil
-            end
-            startAimLoop()
+            PlayerCache.time = 0  -- wymuś refresh
         end
     end)
 
-    startAimLoop()
-
     if DEBUG_MODE and Logging and Logging.new then
-        Logging.new("crosshairs", "Aimbot (z HUD v2) załadowany", 5)
+        Logging.new("crosshairs", "Aimbot (zoptymalizowany) załadowany", 5)
     end
 end
 
@@ -2918,7 +3071,7 @@ do
     if DEBUG_MODE and Logging and Logging.new then
         Logging.new("eye", "Moduł Obserwacja załadowany", 5)
     end
-end
+end 
 
     -- ----------------------------------------
     --   Clean Effects {Celestial Effects}
@@ -3844,7 +3997,7 @@ do
     if DEBUG_MODE and Logging and Logging.new then
         Logging.new("eye-slash", "Anti-Effects załadowany (CelestialSection)", 5)
     end
-end
+end  
 
 end
 
@@ -4725,6 +4878,7 @@ do
 end
 
 end
+
 
 -- =========================================================
 --  4. ZAKŁADKA Exploit
@@ -6431,10 +6585,64 @@ do
         })
     end
 
+    -- ----------------------------------------
+    --  7. FIX CAMERA (reset kamery)
+    -- ----------------------------------------
+    do
+        PlayerSection:AddLabel('Fix Camera')
+
+        PlayerSection:AddButton({
+            Name = "Fix Camera",
+            Callback = function()
+                local cam = workspace.CurrentCamera
+                local char = game.Players.LocalPlayer.Character
+                if not cam then return end
+
+                -- Reset CameraType do Custom
+                pcall(function() cam.CameraType = Enum.CameraType.Custom end)
+
+                -- Reset CameraSubject do Humanoid
+                if char then
+                    local hum = char:FindFirstChildOfClass("Humanoid")
+                    if hum then
+                        pcall(function() cam.CameraSubject = hum end)
+                    end
+                end
+
+                -- Reset FOV do domyślnego
+                pcall(function() cam.FieldOfView = 70 end)
+
+                -- Reset CameraOffset
+                pcall(function() cam.CameraOffset = Vector3.zero end)
+
+                -- Odblokuj mysz
+                pcall(function()
+                    game:GetService("UserInputService").MouseBehavior = Enum.MouseBehavior.Default
+                end)
+
+                -- Odłącz ewentualny Scriptable lock
+                pcall(function()
+                    game:GetService("UserInputService").MouseIconEnabled = true
+                end)
+
+                if Logging and Logging.new then
+                    Logging.new("camera-small", "Kamera zresetowana", 3)
+                end
+                if getgenv().MuminekToggleNotifier then
+                    getgenv().MuminekToggleNotifier:Show("Camera fixed", true)
+                end
+            end
+        })
+
+
+    end
+
+-- Wolne
+
 end
 
     -- ----------------------------------------
-    --  SEKCJA: HUD (Minimap + inne przyszłe)
+    --  SEKCJA: HUD Minimap
     -- ----------------------------------------
 
 
