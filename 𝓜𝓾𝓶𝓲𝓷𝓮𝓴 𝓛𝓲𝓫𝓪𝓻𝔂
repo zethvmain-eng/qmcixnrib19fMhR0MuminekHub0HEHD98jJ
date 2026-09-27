@@ -7477,6 +7477,11 @@ function NeverLose:CreateToggleNotifier()
     return Notifier
 end
 
+local test = "hello"
+local encoded = NeverLose.Base64Encode(Encryption.new(test))
+local decoded = Encryption.reverse(NeverLose.Base64Decode(encoded))
+print("Test:", decoded, "| Oczekiwane: hello") -- kupa
+
 function NeverLose:Unload()
 	if not NeverLose.UnloadEnabled then
 		return;	
