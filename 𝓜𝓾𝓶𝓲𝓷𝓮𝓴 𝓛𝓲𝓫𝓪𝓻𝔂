@@ -5447,6 +5447,15 @@ function NeverLose:CreateWindow(Config)
 			local loaded = 0;
 			local missing = 0;
 
+			print("[Config] Zawartosc JSON:");
+			print(HttpService:JSONEncode(coded));
+			print("[Config] Ilosc wpisow: " .. tostring(#coded));
+
+			-- Sprawdz czy to tablica czy obiekt
+			local cnt = 0;
+			for k, v in pairs(coded) do cnt = cnt + 1 end;
+			print("[Config] Par w tabeli: " .. tostring(cnt));
+
 			for i, v in next, coded do
 				if v.Idx then
 					if NeverLose.Flags[v.Idx] then
