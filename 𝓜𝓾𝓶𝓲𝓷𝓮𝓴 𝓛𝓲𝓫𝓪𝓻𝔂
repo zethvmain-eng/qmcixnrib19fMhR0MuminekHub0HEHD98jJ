@@ -6767,7 +6767,6 @@ function NeverLose:CreateHotkeys()
         IconSize               = 16,
         TextSize               = 13,
         KeySize                = 12,
-        IconColor              = Color3.fromRGB(78, 127, 252),
         TextColor              = Color3.fromRGB(255, 255, 255),
         KeyColor               = Color3.fromRGB(180, 180, 180),
         Width                  = 200,
@@ -6874,7 +6873,7 @@ function NeverLose:CreateHotkeys()
         IconLabel.Position = UDim2.new(0, 0, 0, 0)
         IconLabel.FontFace = NeverLose.BuiltInBold
         IconLabel.Text = icon or "circle"
-        IconLabel.TextColor3 = CONFIG.IconColor
+        IconLabel.TextColor3 = NeverLose.AccentColor or Color3.fromRGB(78, 127, 252)
         IconLabel.TextSize = CONFIG.IconSize
         IconLabel.TextXAlignment = Enum.TextXAlignment.Left
         IconLabel.ZIndex = 102
@@ -6993,7 +6992,16 @@ function NeverLose:CreateHotkeys()
         UIStroke.Transparency = t
     end
 
+    -- === AKTUALIZACJA KOLORU IKON Z ACCENTU ===
+    function HUD:RefreshAccentColor()
+        local newColor = NeverLose.AccentColor or Color3.fromRGB(78, 127, 252)
+        for _, data in pairs(HUD.ActiveHotkeys) do
+            data.icon.TextColor3 = newColor
+        end
+    end
+
     function HUD:SetIconColor(color)
+        -- Ręczne nadpisanie (opcjonalne)
         CONFIG.IconColor = color
         for _, data in pairs(HUD.ActiveHotkeys) do
             data.icon.TextColor3 = color
@@ -7041,6 +7049,18 @@ function NeverLose:CreateHotkeys()
         HUD.ActiveHotkeys = {}
         HUD.LayoutOrder = 0
     end
+
+    -- === AUTO-SYNC ACCENT (sprawdza co 0.5s czy zmieniono akcent) ===
+    task.spawn(function()
+        local lastAccent = NeverLose.AccentColor
+        while HotkeysFrame and HotkeysFrame.Parent do
+            task.wait(0.5)
+            if NeverLose.AccentColor ~= lastAccent then
+                lastAccent = NeverLose.AccentColor
+                HUD:RefreshAccentColor()
+            end
+        end
+    end)
 
     -- Cache
     NeverLose.__HotkeysCache = HUD
