@@ -7093,7 +7093,6 @@ function NeverLose:CreateToggleNotifier()
         DotSize                = 10,
         TextSize               = 13,
         TextColor              = Color3.fromRGB(255, 255, 255),
-        AccentColor            = Color3.fromRGB(78, 127, 252),
         GreenColor             = Color3.fromRGB(0, 255, 100),
         RedColor               = Color3.fromRGB(255, 60, 60),
         Duration               = 2,
@@ -7102,6 +7101,10 @@ function NeverLose:CreateToggleNotifier()
     }
 
     local Notifier = { Enabled = true, Ping = 0, Config = CONFIG }
+
+    local function getAccent()
+        return NeverLose.AccentColor or Color3.fromRGB(78, 127, 252)
+    end
 
     local Container = Instance.new("Frame")
     Container.Name = "NL_ToggleNotifier"
@@ -7148,7 +7151,7 @@ function NeverLose:CreateToggleNotifier()
     ClockIcon.Size = UDim2.new(0, 16, 0, 16)
     ClockIcon.FontFace = NeverLose.BuiltInBold
     ClockIcon.Text = "clock"
-    ClockIcon.TextColor3 = CONFIG.AccentColor
+    ClockIcon.TextColor3 = getAccent()
     ClockIcon.TextSize = 14
     ClockIcon.ZIndex = 202
 
@@ -7182,7 +7185,7 @@ function NeverLose:CreateToggleNotifier()
     BrandIcon.Size = UDim2.new(0, 16, 0, 16)
     BrandIcon.FontFace = NeverLose.BuiltInBold
     BrandIcon.Text = "cube-vertexes"
-    BrandIcon.TextColor3 = CONFIG.AccentColor
+    BrandIcon.TextColor3 = getAccent()
     BrandIcon.TextSize = 14
     BrandIcon.ZIndex = 202
 
@@ -7207,7 +7210,7 @@ function NeverLose:CreateToggleNotifier()
     BrandMiddle.Size = UDim2.new(0, 12, 1, 0)
     BrandMiddle.Font = Enum.Font.GothamBold
     BrandMiddle.Text = "m"
-    BrandMiddle.TextColor3 = CONFIG.AccentColor
+    BrandMiddle.TextColor3 = getAccent()
     BrandMiddle.TextSize = CONFIG.TextSize
     BrandMiddle.TextXAlignment = Enum.TextXAlignment.Left
     BrandMiddle.ZIndex = 202
@@ -7296,6 +7299,22 @@ function NeverLose:CreateToggleNotifier()
         end
     end)
 
+    -- === AUTO-SYNC ACCENT (sprawdza co 0.5s czy zmieniono akcent) ===
+    task.spawn(function()
+        local lastAccent = NeverLose.AccentColor
+        while Bar and Bar.Parent do
+            task.wait(0.5)
+            if NeverLose.AccentColor ~= lastAccent then
+                lastAccent = NeverLose.AccentColor
+                local newColor = getAccent()
+
+                pcall(function() ClockIcon.TextColor3 = newColor end)
+                pcall(function() BrandIcon.TextColor3 = newColor end)
+                pcall(function() BrandMiddle.TextColor3 = newColor end)
+            end
+        end
+    end)
+
     function Notifier:Show(text, isOn)
         if not Notifier.Enabled then return end
         text = tostring(text or "")
@@ -7379,6 +7398,14 @@ function NeverLose:CreateToggleNotifier()
 
     function Notifier:SetDuration(s)
         CONFIG.Duration = tonumber(s) or 2
+    end
+
+    -- Ręczne odświeżenie akcentu
+    function Notifier:RefreshAccentColor()
+        local newColor = getAccent()
+        pcall(function() ClockIcon.TextColor3 = newColor end)
+        pcall(function() BrandIcon.TextColor3 = newColor end)
+        pcall(function() BrandMiddle.TextColor3 = newColor end)
     end
 
     NeverLose.__ToggleNotifierCache = Notifier
