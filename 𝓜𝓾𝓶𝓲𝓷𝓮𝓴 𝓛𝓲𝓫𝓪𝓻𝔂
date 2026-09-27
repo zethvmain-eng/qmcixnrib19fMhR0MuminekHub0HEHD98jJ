@@ -5429,17 +5429,42 @@ function NeverLose:CreateWindow(Config)
 		end;
 
 		function ConfigLib:LoadData(data)
-			local coded = HttpService:JSONDecode(Encryption.reverse(NeverLose.Base64Decode(data)));
+			if not data or data == "" then
+				warn("[Config] LoadData: puste dane");
+				return;
+			end;
 
-			for i,v in next , coded do
+			local decoded, decErr = pcall(function()
+				return HttpService:JSONDecode(Encryption.reverse(NeverLose.Base64Decode(data)));
+			end);
+
+			if not decoded then
+				warn("[Config] Blad dekodowania: " .. tostring(decErr));
+				return;
+			end;
+
+			local coded = decoded;
+			local loaded = 0;
+			local missing = 0;
+
+			for i, v in next, coded do
 				if v.Idx then
 					if NeverLose.Flags[v.Idx] then
-						task.spawn(function()
-							NeverLose.Flags[v.Idx]:SetValue(v.Value)
-						end)
+						local ok, err = pcall(function()
+							NeverLose.Flags[v.Idx]:SetValue(v.Value);
+						end);
+						if ok then
+							loaded = loaded + 1;
+						else
+							warn("[Config] Blad SetValue dla " .. tostring(v.Idx) .. ": " .. tostring(err));
+						end;
+					else
+						missing = missing + 1;
 					end;
 				end;
 			end;
+
+			print(string.format("[Config] Zaladowano: %d | Brak flagi: %d", loaded, missing));
 		end;
 
 		function ConfigLib:RefreshConfig()
@@ -5673,8 +5698,12 @@ function NeverLose:CreateWindow(Config)
 				local _,load_signal = NeverLose:CreateInput(LoadConfig,function()
 					local path = Window.ConfigFolder..'/'..ConfigNameStr;
 
+					print("[Config] Proba wczytania: " .. tostring(path));
+
 					if isfile(path) then
 						local data = readfile(path);
+						print("[Config] Dane (dlugosc): " .. tostring(#data));
+						print("[Config] Dane (pierwsze 80 znakow): " .. tostring(data:sub(1, 80)));
 
 						ConfigLib:LoadData(data);
 
