@@ -5976,6 +5976,7 @@ function NeverLose:CreateWindow(Config)
 
 		Watermark_lb.Renders = {};
 		Watermark_lb.Status = true;
+		Watermark_lb.Icons = {};  -- lista ikon do refreshu koloru
 
 		function Watermark_lb:SetRender(value)
 			Watermark_lb.Status = value;
@@ -6002,6 +6003,29 @@ function NeverLose:CreateWindow(Config)
 				end;
 			end
 		end;
+
+		-- === AKTUALIZACJA KOLORU IKON Z ACCENTU ===
+		function Watermark_lb:RefreshAccentColor()
+			local newColor = NeverLose.AccentColor or Color3.fromRGB(78, 127, 252);
+			for i = 1, #Watermark_lb.Icons do
+				local iconObj = Watermark_lb.Icons[i];
+				if iconObj and iconObj.Parent then
+					pcall(function() iconObj.TextColor3 = newColor end);
+				end
+			end
+		end;
+
+		-- === AUTO-SYNC ACCENT (sprawdza co 0.5s) ===
+		task.spawn(function()
+			local lastAccent = NeverLose.AccentColor;
+			while Watermark and Watermark.Parent do
+				task.wait(0.5);
+				if NeverLose.AccentColor ~= lastAccent then
+					lastAccent = NeverLose.AccentColor;
+					Watermark_lb:RefreshAccentColor();
+				end
+			end
+		end);
 
 		function Watermark_lb:AddBlock(IconStr , Name)
 			local InnerBlock = {};
@@ -6046,10 +6070,13 @@ function NeverLose:CreateWindow(Config)
 			Icon.ZIndex = 17
 			Icon.FontFace = NeverLose.BuiltInBold;
 			Icon.Text = IconStr
-			Icon.TextColor3 = NeverLose.AccentColor
+			Icon.TextColor3 = NeverLose.AccentColor or Color3.fromRGB(78, 127, 252)  -- dynamiczny akcent
 			Icon.TextSize = 18.000
 			Icon.TextTransparency = 0.250
 			Icon.TextWrapped = true
+
+			-- Zapisz ikonę do listy refreshu
+			table.insert(Watermark_lb.Icons, Icon);
 
 			InnerBlock.Update = LPH_NO_VIRTUALIZE(function(value)
 				local size = TextService:GetTextSize(Content.Text , Content.TextSize,Content.Font,Vector2.new(math.huge,math.huge))
