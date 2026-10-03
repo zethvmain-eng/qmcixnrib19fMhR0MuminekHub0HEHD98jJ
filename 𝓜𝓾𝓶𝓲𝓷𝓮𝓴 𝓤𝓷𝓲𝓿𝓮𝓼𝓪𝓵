@@ -1,205 +1,253 @@
-    local MuminekHub = loadstring(game:HttpGet("https://raw.githubusercontent.com/zethvmain-eng/qmcixnrib19fMhR0MuminekHub0HEHD98jJ/refs/heads/main/%F0%9D%93%9C%F0%9D%93%BE%F0%9D%93%B6%F0%9D%93%B2%F0%9D%93%B7%F0%9D%93%AE%F0%9D%93%B4%20%F0%9D%93%9B%F0%9D%93%B2%F0%9D%93%AB%F0%9D%93%AA%F0%9D%93%BB%F0%9D%94%82"))()
+-- ======================================== --
+--           Muminek Hub Main
+-- ======================================== --
 
-    -- == Zabezpieczenie == --
-    local Logging = (MuminekHub.CreateLogger and MuminekHub:CreateLogger()) or {
-    new = function(icon, msg, dur) print("[LOG]", icon, msg) end }
-    local Notification = (MuminekHub.CreateNotification and MuminekHub:CreateNotification()) or {
-    new = function(cfg) print("[NOTIFY]", cfg.Title, cfg.Content) end }
-    local Indicators = (MuminekHub.CreateIndicator and MuminekHub:CreateIndicator()) or {
-    new = function(cfg) return { SetText = function() end, SetRender = function() end, SetColor = function() end, } end }
+local MuminekHub = loadstring(game:HttpGet("https://raw.githubusercontent.com/zethvmain-eng/qmcixnrib19fMhR0MuminekHub0HEHD98jJ/refs/heads/main/%F0%9D%93%9C%F0%9D%93%BE%F0%9D%93%B6%F0%9D%93%B2%F0%9D%93%B7%F0%9D%93%AE%F0%9D%93%B4%20%F0%9D%93%9B%F0%9D%93%B2%F0%9D%93%AB%F0%9D%93%AA%F0%9D%93%BB%F0%9D%94%82"))()
 
-    -- == Configuracja == --
-    local Indicator = MuminekHub:CreateIndicator();
-    local Notification = MuminekHub:CreateNotification();
-    local Logging = MuminekHub:CreateLogger();
-    local Hotkeys = MuminekHub:CreateHotkeys()
-    local ToggleNotifier = MuminekHub:CreateToggleNotifier()
-    local UserInputService = game:GetService("UserInputService")
-    local RunService  = game:GetService("RunService")
+if not MuminekHub then
+    warn("[Muminek Hub] Biblioteka nie załadowała się!")
+    return
+end
+
+-- == Systemy z fallbackami ==
+local Logging = (MuminekHub.CreateLogger and MuminekHub:CreateLogger()) or {
+    new = function(icon, msg, dur) print("[LOG]", icon, msg) end
+}
+
+local Notification = (MuminekHub.CreateNotification and MuminekHub:CreateNotification()) or {
+    new = function(cfg) print("[NOTIFY]", cfg.Title, cfg.Content) end
+}
+
+local Indicators = (MuminekHub.CreateIndicator and MuminekHub:CreateIndicator()) or {
+    new = function(cfg) return { SetText = function() end, SetRender = function() end, SetColor = function() end } end
+}
+
+local Hotkeys = (MuminekHub.CreateHotkeys and MuminekHub:CreateHotkeys()) or {
+    AddHotkey = function() end,
+    RemoveHotkey = function() end,
+    UpdateKey = function() end,
+}
+
+local ToggleNotifier = (MuminekHub.CreateToggleNotifier and MuminekHub:CreateToggleNotifier()) or {
+    Show = function(self, text, state) end
+}
+
+-- Aliasy dla kompatybilności
+local Indicator = Indicators
+
+-- == Usługi ==
+local UserInputService = game:GetService("UserInputService")
+local RunService       = game:GetService("RunService")
+local Players          = game:GetService("Players")
+local LocalPlayer      = Players.LocalPlayer
+local DEBUG_MODE       = false
+
+-- == Global ==
+MuminekHub.GlobalLogo = "rbxassetid://89791569371168"
+_G.MuminekHub = MuminekHub
+
+getgenv().MuminekToggleNotifier = ToggleNotifier
+getgenv().MuminekHub            = MuminekHub
+getgenv().Indicators            = Indicators
+getgenv().Notification          = Notification
+getgenv().Logging               = Logging
+getgenv().MuminekHotkeys        = Hotkeys
+
+Hotkeys:AddHotkey({ Name = "Hotkey", Icon = "key-command", Key = " ", Bold = true })
+
+if MuminekHub.ScreenGui then
+    MuminekHub.ScreenGui.DisplayOrder = 999
+    MuminekHub.ScreenGui.Enabled = true
+end
+
+-- == Loading Screen == --
+Notification.new({
+    Title    = "Muminek Hub",
+    Content  = "Inicjalizacja Trwa...",
+    Duration = 3,
+})
+
+task.wait(3)
+
+
+-- == System Obecnosci - Przez Komunikator == --
+do
+    local PRESENCE_URL       = "https://muminek-chat.onrender.com"
+    local HEARTBEAT_INTERVAL = 10
+    local POLL_INTERVAL      = 2
+    local TIMEOUT_SECONDS    = 20
+
+    -- Klient HTTP (działa z większością executorów)
+    local rawRequest = (syn and syn.request)
+        or (xeno and xeno.request)
+        or (http and http.request)
+        or http_request
+        or request
+        or (fluxus and fluxus.request)
+        or (krnl and krnl.request)
+
+    -- ⚠️ NAPRAWA: zamiast `return end` (które zabija cały skrypt!)
+    -- używamy if/else — jeśli brak request, pomijamy system obecności
+    if not rawRequest then
+        warn("[Presence] Brak funkcji request — pomijam system obecności")
+
+        if Logging and Logging.new then
+            Logging.new("triangle-exclamation", "Brak request — system obecności wyłączony", 3)
+        end
+    else
+
+    local HttpService = game:GetService("HttpService")
     local Players     = game:GetService("Players")
     local LocalPlayer = Players.LocalPlayer
-    local DEBUG_MODE = false
-    MuminekHub.GlobalLogo = "rbxassetid://89791569371168"
-    _G.MuminekHub = MuminekHub
-    getgenv().MuminekToggleNotifier = ToggleNotifier
-    getgenv().MuminekHub    = MuminekHub
-    getgenv().MuminekHub    = MuminekHub
-    getgenv().Indicators     = Indicators
-    getgenv().Notification  = Notification
-    getgenv().Logging       = Logging
-    getgenv().MuminekHotkeys = Hotkeys
-    Hotkeys:AddHotkey({ Name = "Hotkey", Icon = "key-command", Key  = " ", Bold = true, })
-    if MuminekHub.ScreenGui then
-    MuminekHub.ScreenGui.DisplayOrder = 999
-    MuminekHub.ScreenGui.Enabled = true end
 
-
-    -- == Loading Screen == --
-        Notification.new({
-        Title = "Muminek Hub",
-        Content = "Inicjalizacja Trwa...",
-        Duration = 3,
-    })
-
-    wait(3)
-
-
-    -- == System Obecnosci - Przez Komunikator == --
-
-    do
-        local PRESENCE_URL = "https://muminek-chat.onrender.com"
-        local HEARTBEAT_INTERVAL = 10
-        local POLL_INTERVAL = 2
-        local TIMEOUT_SECONDS = 20
-
-        -- Klient HTTP (działa z większością executorów)
-        local rawRequest = (syn and syn.request)
-            or (xeno and xeno.request)
-            or (http and http.request)
-            or http_request
-            or request
-            or (fluxus and fluxus.request)
-            or (krnl and krnl.request)
-
-        if not rawRequest then
-            -- Brak wsparcia HTTP – pomiń obecność
-            return
-        end
-
-        local HttpService = game:GetService("HttpService")
-        local Players = game:GetService("Players")
-        local LocalPlayer = Players.LocalPlayer
-
-        local function request(options)
-            local reqData = {
-                Url = options.Url,
-                Method = options.Method or "GET",
-                Headers = options.Headers or {},
-                Body = options.Body
-            }
-            local ok, res = pcall(function() return rawRequest(reqData) end)
-            if ok and res then
-                return res.Body or res.body or res.Response or res.data
-            end
-            return nil
-        end
-
-        local Presence = {
-            ActiveUsers = {},
-            LastId = 0,
+    local function request(options)
+        local reqData = {
+            Url     = options.Url,
+            Method  = options.Method or "GET",
+            Headers = options.Headers or {},
+            Body    = options.Body
         }
-
-        -- Powiadomienie – używa ToggleNotifier
-        local function notify(text, isOnline)
-            local tn = getgenv().MuminekToggleNotifier
-            if tn and tn.Show then
-                pcall(function() tn:Show(text, isOnline) end)
-            end
-            if Logging and Logging.new then
-                pcall(function()
-                    Logging.new(isOnline and "person-plus" or "person-arrow-from-bottom-right", text, 4)
-                end)
-            end
+        local ok, res = pcall(function() return rawRequest(reqData) end)
+        if ok and res then
+            return res.Body or res.body or res.Response or res.data
         end
+        return nil
+    end
 
-        -- Wyślij sygnał
-        local function sendSignal(kind)
-            task.spawn(function()
-                pcall(function()
-                    request({
-                        Url = PRESENCE_URL .. "/send",
-                        Method = "POST",
-                        Headers = { ["Content-Type"] = "application/json" },
-                        Body = HttpService:JSONEncode({
-                            senderName = LocalPlayer.Name,
-                            userId = LocalPlayer.UserId,
-                            text = "__PRESENCE__:" .. kind,
-                            isPresence = true,
-                            presenceKind = kind
-                        })
-                    })
-                end)
+    local Presence = { ActiveUsers = {}, LastId = 0 }
+
+    -- === POWIADOMIENIE przez Notification.new ===
+    local function notify(text, isOnline)
+        -- Główne powiadomienie
+        if Notification and Notification.new then
+            pcall(function()
+                Notification.new({
+                    Title    = isOnline and "Gracz Online" or "Gracz Offline",
+                    Content  = text,
+                    Icon     = isOnline and "person-plus" or "person-arrow-from-bottom-right",
+                    Duration = 4,
+                    Logo     = MuminekHub.GlobalLogo or nil,
+                })
             end)
         end
 
-        -- Start: poinformuj innych że jesteśmy online
-        task.delay(2, function()
-            sendSignal("join")
-        end)
-
-        -- Heartbeat co 10s
-        task.spawn(function()
-            while task.wait(HEARTBEAT_INTERVAL) do
-                sendSignal("heartbeat")
-            end
-        end)
-
-        -- Poinformuj o wyjściu (client-side)
-        -- Roblox nie pozwala BindToClose na kliencie, więc wysyłamy sygnał
-        -- gdy LocalPlayer zostanie odłączony od gry (teleport, disconnect)
-        pcall(function()
-            LocalPlayer.AncestryChanged:Connect(function(_, parent)
-                if not parent then
-                    sendSignal("leave")
-                end
+        -- Log w konsoli
+        if Logging and Logging.new then
+            pcall(function()
+                Logging.new(
+                    isOnline and "person-plus" or "person-arrow-from-bottom-right",
+                    text,
+                    4
+                )
             end)
-        end)
-
-        -- Dodatkowo: gdy gracz zostanie teleportowany
-        pcall(function()
-            LocalPlayer.OnTeleport:Connect(function(state)
-                if state == Enum.TeleportState.Started then
-                    sendSignal("leave")
-                end
-            end)
-        end)
-
-        -- Polling: sprawdzaj obecność innych co 2s
-        task.spawn(function()
-            while task.wait(POLL_INTERVAL) do
-                local url = PRESENCE_URL .. "/messages?since=" .. tostring(Presence.LastId)
-                local body = request({ Url = url, Method = "GET" })
-
-                if body and typeof(body) == "string" and #body > 0 then
-                    local ok, msgs = pcall(function() return HttpService:JSONDecode(body) end)
-                    if ok and typeof(msgs) == "table" then
-                        for _, msg in ipairs(msgs) do
-                            local numericId = tonumber(msg.id)
-                            if numericId and numericId > Presence.LastId then
-                                Presence.LastId = numericId
-
-                                local sender = tostring(msg.senderName or "?")
-                                local txt = tostring(msg.text or "")
-
-                                if sender ~= LocalPlayer.Name then
-                                    local kind = msg.presenceKind or txt:match("__PRESENCE__:(%w+)")
-
-                                    if kind == "join" then
-                                        Presence.ActiveUsers[sender] = tick()
-                                        notify(sender .. " jest Online", true)
-
-                                    elseif kind == "heartbeat" then
-                                        Presence.ActiveUsers[sender] = tick()
-
-                                    elseif kind == "leave" then
-                                        Presence.ActiveUsers[sender] = nil
-                                        notify(sender .. " jest Offline", false)
-                                    end end end end end end
-
-                -- Timeout – brak heartbeatu przez TIMEOUT_SECONDS = offline
-                for user, lastTime in pairs(Presence.ActiveUsers) do
-                    if tick() - lastTime > TIMEOUT_SECONDS then
-                        Presence.ActiveUsers[user] = nil
-                        notify(user .. " jest Offline", false)
-                    end end end end)
-
-        -- Globalny dostęp
-        getgenv().MuminekPresence = Presence
-
-        if DEBUG_MODE and Logging and Logging.new then
-            Logging.new("person-plus", "System obecności załadowany", 3)
         end
     end
+
+    -- === WYŚLIJ SYGNAŁ ===
+    local function sendSignal(kind)
+        task.spawn(function()
+            pcall(function()
+                request({
+                    Url     = PRESENCE_URL .. "/send",
+                    Method  = "POST",
+                    Headers = { ["Content-Type"] = "application/json" },
+                    Body    = HttpService:JSONEncode({
+                        senderName   = LocalPlayer.Name,
+                        userId       = LocalPlayer.UserId,
+                        text         = "__PRESENCE__:" .. kind,
+                        isPresence   = true,
+                        presenceKind = kind
+                    })
+                })
+            end)
+        end)
+    end
+
+    -- Start: poinformuj innych że jesteśmy online
+    task.delay(2, function() sendSignal("join") end)
+
+    -- Heartbeat co 10s
+    task.spawn(function()
+        while task.wait(HEARTBEAT_INTERVAL) do
+            sendSignal("heartbeat")
+        end
+    end)
+
+    -- Poinformuj o wyjściu
+    pcall(function()
+        LocalPlayer.AncestryChanged:Connect(function(_, parent)
+            if not parent then sendSignal("leave") end
+        end)
+    end)
+
+    -- Poinformuj o teleporcie
+    pcall(function()
+        LocalPlayer.OnTeleport:Connect(function(state)
+            if state == Enum.TeleportState.Started then
+                sendSignal("leave")
+            end
+        end)
+    end)
+
+    -- === POLLING: sprawdzaj obecność innych co 2s ===
+    task.spawn(function()
+        while task.wait(POLL_INTERVAL) do
+            local url = PRESENCE_URL .. "/messages?since=" .. tostring(Presence.LastId)
+            local body = request({ Url = url, Method = "GET" })
+
+            if body and typeof(body) == "string" and #body > 0 then
+                local ok, msgs = pcall(function()
+                    return HttpService:JSONDecode(body)
+                end)
+
+                if ok and typeof(msgs) == "table" then
+                    for _, msg in ipairs(msgs) do
+                        local numericId = tonumber(msg.id)
+                        if numericId and numericId > Presence.LastId then
+                            Presence.LastId = numericId
+
+                            local sender = tostring(msg.senderName or "?")
+                            local txt    = tostring(msg.text or "")
+
+                            if sender ~= LocalPlayer.Name then
+                                local kind = msg.presenceKind or txt:match("__PRESENCE__:(%w+)")
+
+                                if kind == "join" then
+                                    Presence.ActiveUsers[sender] = tick()
+                                    notify(sender .. " jest Online", true)
+
+                                elseif kind == "heartbeat" then
+                                    Presence.ActiveUsers[sender] = tick()
+
+                                elseif kind == "leave" then
+                                    Presence.ActiveUsers[sender] = nil
+                                    notify(sender .. " jest Offline", false)
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+
+            -- Timeout — brak heartbeatu przez TIMEOUT_SECONDS = offline
+            for user, lastTime in pairs(Presence.ActiveUsers) do
+                if tick() - lastTime > TIMEOUT_SECONDS then
+                    Presence.ActiveUsers[user] = nil
+                    notify(user .. " jest Offline", false)
+                end
+            end
+        end
+    end)
+
+    -- Globalny dostęp
+    getgenv().MuminekPresence = Presence
+
+    if DEBUG_MODE and Logging and Logging.new then
+        Logging.new("person-plus", "System obecności załadowany", 3)
+    end
+
+    end -- ← koniec `if not rawRequest then ... else ... end`
+end
 
     -- == Rangi - Przez HWID (GeyHwid) == --
     do
@@ -295,14 +343,7 @@
     if PremiumRank then window:SetAccount({Expires = "Premium"}) end 
     if ModeratorRank then window:SetAccount({Expires = "Moderator"}) end
 
-    -- == Indicatory (Indicators) == --
-    
-    -- Zegar | Aktualny Czas --
-    local ClockIndicator = Indicators.new({
-        Name = os.date("%H:%M:%S"),
-        Icon = 'clock',
-        Color = 'White'
-    })                                  
+    -- == Indicatory (Indicators) == --                             
                                                
     -- Anti Cheat Detector --                  
     local AntiCheat = Indicators.new({         
@@ -314,6 +355,7 @@
 
     -- == 1. Tworzenie Watermarku == --
     local CustomWatermark = window:Watermark()
+    CustomWatermark:SetPosition("TopRight")
 
     -- 2. Pierwszorazowe wymuszenie widoczności
     if CustomWatermark.SetRender then
@@ -461,89 +503,213 @@
         end,
     })
 
-    -- Menu Scale | Rozmiar Menu
+    -- Menu Scale | Rozmiar Menu (procenty)
     window.UserSettings:AddLabel('Rozmiar Menu'):AddDropdown({
-        Default = "Default",
-        Values = {"Default",'Large','Mobile','Small'},
+        Default = "100%",
+        Values = {"Auto", "75%", "100%", "120%", "150%", "175%", "200%"},
         Callback = function(v)
-            window:SetSize(MuminekHub.Scales[v]);
-            Logging.new("crop",'Changed ui size to '..tostring(v),5)
-        end,
-    })
+            local baseSize = MuminekHub.Scales.Default
+            local baseX = baseSize.X.Offset
+            local baseY = baseSize.Y.Offset
+
+            local mult = 1
+            if v == "Auto" then
+                local cam = workspace.CurrentCamera
+                if cam then
+                    local vp = cam.ViewportSize
+                    local targetX = math.floor(vp.X * 0.70)
+                    local targetY = math.floor(vp.Y * 0.80)
+                    window:SetSize(UDim2.fromOffset(targetX, targetY))
+                    if Logging and Logging.new then
+                        Logging.new("crop", "Auto size: " .. targetX .. "x" .. targetY, 5)
+                    end
+                    return
+                end
+                mult = 1
+            elseif v == "75%"  then mult = 0.75 elseif v == "100%" then mult = 1.00
+            elseif v == "120%" then mult = 1.20 elseif v == "150%" then mult = 1.50
+            elseif v == "175%" then mult = 1.75 elseif v == "200%" then mult = 2.00
+            end
+
+            local newX = math.floor(baseX * mult)
+            local newY = math.floor(baseY * mult)
+
+            window:SetSize(UDim2.fromOffset(newX, newY))
+
+            if Logging and Logging.new then
+                Logging.new("crop", "Rozmiar menu: " .. v .. " (" .. newX .. "x" .. newY .. ")", 5)
+            end end,
+        })
 
     -- == Kolory == --
-do 
-    window.UserSettings:AddLabel("Kolor"):AddDropdown({
-        Default = "Niebieski",
-        Values = {"Niebieski", "Czerwony", "Pomarańczowy", "Żółty", "Zielony", "Miętowy", "Turkusowy", "Fioletowy", "Różowy", "Koralowy", "Biały", "Szary"},
-        Flag = "KolorMenu",
-        Callback = function(v)
-            if v == "Niebieski" then
-                MuminekHub.AccentColor = Color3.fromRGB(78, 127, 252)
-
-            elseif v == "Czerwony" then
-                MuminekHub.AccentColor = Color3.fromRGB(255, 0, 0)
-
-            elseif v == "Pomarańczowy" then
-                MuminekHub.AccentColor = Color3.fromRGB(255, 132, 0)
-
-            elseif v == "Żółty" then
-                MuminekHub.AccentColor = Color3.fromRGB(255, 255, 0)
-
-            elseif v == "Zielony" then
-                MuminekHub.AccentColor = Color3.fromRGB(0, 217, 0)
-
-            elseif v == "Miętowy" then
-                MuminekHub.AccentColor = Color3.fromRGB(0, 255, 150)
-
-            elseif v == "Turkusowy" then
-                MuminekHub.AccentColor = Color3.fromRGB(0, 255, 255)
-
-            elseif v == "Fioletowy" then
-                MuminekHub.AccentColor = Color3.fromRGB(105, 0, 209)
-
-            elseif v == "Różowy" then
-                MuminekHub.AccentColor = Color3.fromRGB(255, 20, 147)
-
-            elseif v == "Koralowy" then
-                MuminekHub.AccentColor = Color3.fromRGB(255, 127, 80)
-
-            elseif v == "Biały" then
-                MuminekHub.AccentColor = Color3.fromRGB(255, 255, 255)
-
-            elseif v == "Szary" then
-                MuminekHub.AccentColor = Color3.fromRGB(180, 180, 180)
+    do
+        window.UserSettings:AddLabel("Kolor"):AddColorPicker({
+            Default = Color3.fromRGB(78, 127, 252),
+            Flag = "KolorMenu",
+            Callback = function(color)
+                MuminekHub.AccentColor = color
             end
-        end
-    })
-end
-
-    -- == Logika Zegar Idicator == --
-do  task.spawn(function()
-        while true do
-            task.wait(1)
-            ClockIndicator:SetText(os.date("%H:%M:%S")) 
-        end
-    end)
-
-    -- == Przełącznik w ustawieniach menu == --
-    window.UserSettings:AddLabel('Zegar'):AddToggle({
-        Default = false,
-        Flag = "ShowClock",
-        Callback = function(v)
-            if ClockIndicator then
-                ClockIndicator:SetRender(v)
-            end
-            if Logging and Logging.new then
-                Logging.new("clock", "Zegar " .. (v and "włączony" or "wyłączony"), 3)
-            end
-        end
-    })
-
-    if DEBUG_MODE and Logging and Logging.new then
-        Logging.new("clock", "Moduł Zegara załadowany", 3)
+        })
     end
-end
+
+    window.UserSettings:AddLabel("Watermark"):AddDropdown({
+        Default = "TopRight",
+        Values = {
+            "TopLeft", "TopCenter", "TopRight",
+            "MiddleLeft", "MiddleCenter", "MiddleRight",
+            "BottomLeft", "BottomCenter", "BottomRight"
+        },
+        Flag = "WatermarkPosition",
+        Callback = function(v)
+            if CustomWatermark and CustomWatermark.SetPosition then
+                CustomWatermark:SetPosition(v)
+                Logging.new("move", "Watermark → " .. v, 3)
+            end
+        end
+    })
+
+    -- == Safe Mode == --
+    window.UserSettings:AddButton({
+        Icon = 'shield-lock',
+        Name = "Safe Mode",
+        Callback = function()
+            local ok, err = pcall(function()
+                local Players = game:GetService("Players")
+                local LP = Players.LocalPlayer
+                local char = LP.Character
+                local hum = char and char:FindFirstChildOfClass("Humanoid")
+                local hrp = char and char:FindFirstChild("HumanoidRootPart")
+
+                --  1. RESET WARTOŚCI GRACZA DO DEFAULT
+
+                if hum then
+                    pcall(function()
+                        hum.WalkSpeed = 16
+                        hum.JumpPower = 50
+                        hum.UseJumpPower = true
+                        hum.HipHeight = 2
+                        hum.MaxSlopeAngle = 89
+                    end) end
+
+
+                --  2. USUŃ BODYVELOCITY / BODYGYRO (ślady fly)
+
+                if hrp then
+                    for _, obj in ipairs(hrp:GetChildren()) do
+                        if obj:IsA("BodyVelocity") or obj:IsA("BodyGyro") or obj:IsA("BodyAngularVelocity") or obj:IsA("BodyForce") then
+                            pcall(function() obj:Destroy() end)
+                        end end end
+
+                --  3. USUŃ NIEWIDZIALNOŚĆ 
+
+                LP.ReplicationFocus = nil
+                for _, obj in ipairs(workspace:GetChildren()) do
+                    if obj.Name == "InvisReplicationFocus" then
+                        pcall(function() obj:Destroy() end)
+                    end end
+
+                --  4. RESET FOV KAMERY + TYP
+
+                local cam = workspace.CurrentCamera
+                if cam then
+                    pcall(function()
+                        cam.FieldOfView = 70
+                        cam.CameraType = Enum.CameraType.Custom
+                        cam.CameraOffset = Vector3.zero
+                    end)
+                    if hum then
+                        pcall(function() cam.CameraSubject = hum end)
+                    end end
+
+
+                --  5. ODKRYJ WSZYSTKIE CZĘŚCI CIAŁA
+
+                if char then
+                    for _, part in ipairs(char:GetDescendants()) do
+                        if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
+                            pcall(function()
+                                part.CanCollide = true
+                                if part.Transparency >= 0.95 then
+                                    part.Transparency = 0
+                                end
+                            end)
+                        elseif part:IsA("Decal") then
+                            pcall(function() part.Transparency = 0 end)
+                        end end end
+
+                --  6. RESET LIGHTING
+
+                local Lighting = game:GetService("Lighting")
+                pcall(function()
+                    Lighting.Ambient = Color3.fromRGB(0, 0, 0)
+                    Lighting.OutdoorAmbient = Color3.fromRGB(0, 0, 0)
+                    Lighting.Brightness = 2
+                    Lighting.FogEnd = 100000
+                    Lighting.FogStart = 0
+                    Lighting.ExposureCompensation = 0
+                    Lighting.ColorShift_Bottom = Color3.fromRGB(0, 0, 0)
+                    Lighting.ColorShift_Top = Color3.fromRGB(0, 0, 0)
+                    Lighting.EnvironmentDiffuseScale = 1
+                    Lighting.EnvironmentSpecularScale = 1
+                end)
+
+
+                --  7. WYŁĄCZ RYZYKOWNE MODUŁY
+
+                local riskyFlags = {
+                    "Aimbot","SilentAim",
+                    "SpinbotToggle","CursorBot","NPCBot",
+                    "TriggerBot","Aimbot_Visibility","LegitBot_Toggle",
+                    "InvisibilityToggle_Player","Player_Noclip","Player_SpeedToggle",
+                    "Player_JumpToggle","FlyToggle","InfJump",
+                    "DashToggle","AutoBackstab","SwordTP_Toggle",
+                    "AutoClicker_Player","BackpackToggle","Shader-RTX",
+                    "HVHHop_Toggle","FakeLag","PingSpoofer",
+                }
+
+                if MuminekHub and MuminekHub.Flags then
+                    for _, flag in ipairs(riskyFlags) do
+                        local mod = MuminekHub.Flags[flag]
+                        if mod and mod.SetValue then
+                            pcall(function() mod:SetValue(false) end)
+                        end end end
+
+                --  8. WYŁĄCZ WŁASNE INDICATORY (opcjonalnie)
+
+                if AntiCheat then
+                    pcall(function()
+                        AntiCheat:SetColor("Green")
+                        AntiCheat:SetText("Safe")
+                    end)
+                end
+
+                --  9. RESET RUCHU FIZYCZNEGO
+
+                if hrp then pcall(function()
+                        hrp.AssemblyLinearVelocity = Vector3.zero
+                        hrp.AssemblyAngularVelocity = Vector3.zero
+                        hrp.Anchored = false end) end
+
+                --  POWIADOMIENIA
+
+                if Notification and Notification.new then
+                    pcall(function()
+                        Notification.new({Title = "Safe Mode",Content = "Wszystkie ryzykowne funkcje wyłączone. Wartości zresetowane.",Duration = 6,})
+                    end)end
+
+                if Logging and Logging.new then
+                    pcall(function()
+                        Logging.new("shield-lock", "Safe Mode aktywowany – reset do default", 6)end)end
+
+                if getgenv().MuminekToggleNotifier then
+                    pcall(function()
+                        getgenv().MuminekToggleNotifier:Show("Safe Mode ON", true)end) end end)
+
+            if not ok then
+                if Logging and Logging.new then
+                    pcall(function()
+                        Logging.new("triangle-exclamation", "Safe Mode blad: " .. tostring(err), 5)
+                    end)end end end,})
 
     -- == Discord Link == --
     window.UserSettings:AddButton({
@@ -565,26 +731,132 @@ end
 
     -- == Powiadomienia == --
 
+    Logging.new("discord",'Jeśli masz jakieś problemy skontaktuj się na discord ',10)
+
+    Logging.new("sun", "Dziękujemy za Wybranie Muminek Hub", 10)
+
+
+    -- == System Check == --
+    do  local systemIssues = {}
+        local isStable = true
+        -- DETEKCJA EXECUTORA 
+        local execName = "Nieznany"
+        local ok_exec, detectedExec = pcall(function()
+            if identifyexecutor then
+                return identifyexecutor()
+            end return nil end)
+        if ok_exec and detectedExec then
+        execName = tostring(detectedExec) elseif syn then execName = "Synapse X"
+        elseif krnl then execName = "Krnl" elseif fluxus then execName = "Fluxus"
+        elseif xeno then execName = "Xeno" elseif delta then execName = "Delta"
+        elseif is_sirhurt_closure then execName = "SirHurt" elseif secure_load then execName = "Sentinel"
+        end
+        -- === NAZWA GRACZA ===
+        local playerName = "Gracz"
+        pcall(function()
+            local LP = game:GetService("Players").LocalPlayer
+            playerName = LP.DisplayName or LP.Name or "Gracz"
+        end)
+        -- 1. Sprawdź podstawowe usługi Roblox
+        local services = {
+            "RunService", "UserInputService", "Players", "TweenService",
+            "HttpService", "VirtualInputManager", "GuiService", "Lighting",
+        }
+        for _, svc in ipairs(services) do
+            local ok = pcall(function()
+                return game:GetService(svc) end)
+            if not ok then
+                table.insert(systemIssues, "Brak uslugi: " .. svc)
+                isStable = false end end
+        -- 2. Sprawdź funkcje executora
+        local checkFunctions = {
+            { name = "request",         check = function() return (syn and syn.request) or http_request or request end }, { name = "getgenv",         check = function() return getgenv end },
+            { name = "cloneref",        check = function() return cloneref end },                                         { name = "gethui",          check = function() return gethui or get_hidden_gui end },
+            { name = "setclipboard",    check = function() return setclipboard or toclipboard end },                      { name = "getrawmetatable", check = function() return getrawmetatable end },
+            { name = "newcclosure",     check = function() return newcclosure end },                                      { name = "Drawing",         check = function() return Drawing end },
+        }
+        for _, fn in ipairs(checkFunctions) do
+            local ok, res = pcall(fn.check)
+            if not ok or not res then
+                table.insert(systemIssues, "Brak funkcji: " .. fn.name)
+                isStable = false end end
+        -- 3. Sprawdź Drawing API
+        local ok_drawing = pcall(function()
+            local c = Drawing.new("Circle")
+            c.Visible = false
+            c:Remove()
+        end)
+        if not ok_drawing then
+            table.insert(systemIssues, "Blokada: Drawing API")
+            isStable = false end
+        -- 4. Sprawdź RunService.Heartbeat
+        local ok_run = pcall(function()
+            local rs = game:GetService("RunService")
+            local conn = rs.Heartbeat:Connect(function() end)
+            task.wait(0.05)
+            conn:Disconnect() end)
+        if not ok_run then
+            table.insert(systemIssues, "Blokada: RunService")
+            isStable = false end
+        -- 5. Sprawdź HTTP (tylko warning)
+        local hasHTTP = (syn and syn.request) or (http and http.request) or http_request or request
+        if not hasHTTP then
+            table.insert(systemIssues, "Brak HTTP (limit)") end
+        -- 6. Sprawdź Workspace i Camera
+        if not workspace or not workspace.CurrentCamera then
+            table.insert(systemIssues, "Blokada: Workspace/Camera")
+            isStable = false end
+        -------------------------------- --
+        --  NOTYFIKACJA – ogólny status
+        -------------------------------- --
+        task.delay(0.5, function() if not (Notification and Notification.new) then return end
+        if isStable then pcall(function()
+        Notification.new({Title = "System",Content = "Executor: " .. execName .. " | Hello: " .. playerName .. " | Stabilny", Duration = 7, }) end)
+            else
+                local preview = {}
+                for i = 1, math.min(3, #systemIssues) do table.insert(preview, systemIssues[i]) end
+                local contentText = "Executor: " .. execName .. " | Hello: " .. playerName .. " | Error (" .. #systemIssues .. "): " .. table.concat(preview, ", ")
+                if #systemIssues > 3 then contentText = contentText .. " +" .. (#systemIssues - 3) .. " wiecej" end
+                pcall(function()
+                Notification.new({Title = "System",Content = contentText,Duration = 7,}) end) end end)
+        -- ------------------------------- --
+        --  NOTYFIKACJA – lista problemów 
+        -- ------------------------------- --
+        task.delay(0.8, function()
+            if isStable then return end
+            if not (Notification and Notification.new) then return end
+            local preview = {}
+            for i = 1, math.min(5, #systemIssues) do
+            table.insert(preview, systemIssues[i]) end
+            pcall(function()
+            Notification.new({Title = "System Error Details",Content = table.concat(preview, ", "),Duration = 8,}) end) end)
+        -- ----------------------------- --
+        --  TOGGLE NOTIFIER
+        -- ----------------------------- --
+        task.delay(0.6, function()
+            local tn = getgenv().MuminekToggleNotifier if tn and tn.Show then
+                local label = isStable and (execName .. " | " .. playerName) or ("System Error (" .. #systemIssues .. ")")
+                pcall(function() tn:Show(label, isStable) end) end end)
+        -- ----------------------------- --
+        --  LOGGING – wpis do logów
+        -- ----------------------------- --
+        task.delay(0.7, function()
+            if not (Logging and Logging.new) then return end
+            pcall(function()
+                if isStable then
+                    Logging.new("shield-check", execName .. " | " .. playerName .. " | Stabilny", 5)
+                else
+                    Logging.new("triangle-exclamation", "System Error: " .. #systemIssues .. " problemow", 5)
+                end end) end)
+        --  GLOBALNY DOSTĘP
+        getgenv().MuminekSystemCheck = { Stable = isStable, Issues = systemIssues, Executor = execName, Player = playerName, } end
+
+    -- Milego Dnia
     Notification.new({
         Title = "Zethv Owner",
         Content = "Miłego Dnia",
         Duration = 7,
     })
-
-    --task.wait(0.3)
-    Notification.new({
-        Title = "Muminek Hub",
-        Content = "To Jest Muminek Hub", 
-        Duration = 5,
-    })
-
-    Logging.new("discord",'Jeśli masz jakieś problemy skontaktuj się na discord ',10)
-
-    --task.wait(0.3)
-    Logging.new("shield-lock", "Bezpieczna Sprawdzona Wersja ", 10)
-
-    --task.wait(0.3)
-    Logging.new("sun", "Dziękujemy za Wybranie Muminek Hub", 10)
 
     -- == Background AntiCheat Setting == --
         AntiCheat:SetRender(true);
@@ -1057,10 +1329,14 @@ do
         HUD:UpdateKey(hotkeyName, settings.toggleKeyStr)
     end
 
-    -- == Toggle Notifier == --
+    -- == Toggle Notifier (Logging) == --
     local function notify(state)
-        if getgenv().MuminekToggleNotifier then
-            getgenv().MuminekToggleNotifier:Show("Aimbot toggled " .. (state and "on" or "off"), state)
+        if Logging and Logging.new then
+            Logging.new(
+                state and "crosshairs" or "crosshairs-slash",
+                "Aimbot " .. (state and "ON" or "OFF"),
+                3
+            )
         end
     end
 
@@ -1386,9 +1662,9 @@ do
         end
     end)
 
-    -- ============================================================
+    -- ----------------------------------
     --  INTERFEJS
-    -- ============================================================
+    -- ----------------------------------
     local MainLabel = CombatSection:AddLabel('Aimbot')
 
     local AimbotToggleUI = MainLabel:AddToggle({
@@ -2519,9 +2795,6 @@ end)
             Logging.new("sword", "SwordTP załadowany w SilentSection", 5)
         end
     end
-
-    local PremiumSecionCombat = Combat:AddSection({ Name = "Premium Section", Position = 'left' })
-
 end
 
 -- ===============================================
@@ -2537,41 +2810,107 @@ do
     --       PLAYER ESP, RINGS & TRACERS 
     -- ----------------------------------------
     local PlayerEspSection = Visuals:AddSection({ Name = "PLAYER ESP", Position = 'left' })
+    local Players_Service = game:GetService("Players")
+    local RunService_V = game:GetService("RunService")
+    local LocalPlayer_V = Players_Service.LocalPlayer
 
     local ESP_Settings = {
-        Enabled = false, Names = false, Health = false, Distance = false,
-        Type = "Model", Color = Color3.fromRGB(255, 255, 255),
-        Tracers = false, TracerColor = Color3.fromRGB(255, 255, 255)
-    }
-    local Ring_Settings = {
-        Enabled = false, 
-        Radius = 4, 
-        Color = Color3.fromRGB(0, 255, 255),
-        Animate = true -- To nowa zmienna do ruchu
+        Enabled = false,
+        Names = false,
+        Health = false,
+        Distance = false,
+        Type = "Model",
+        Color = Color3.fromRGB(255, 255, 255),
+        Tracers = false,
+        TracerColor = Color3.fromRGB(255, 255, 255),
+        Font = "RobotoMono",
+        TextSize = 14,
+        TextOutline = true,
+        TextTransparency = 0.0,
     }
 
+    local Ring_Settings = {
+        Enabled = false,
+        Radius = 4,
+        Color = Color3.fromRGB(0, 255, 255),
+        Animate = true,
+        Thickness = 0.2,
+        Height = 0.1,
+    }
+
+    -- Lista czcionek do wyboru
+    local FONT_OPTIONS = {
+        "RobotoMono",
+        "Gotham",
+        "GothamMedium",
+        "GothamBold",
+        "GothamBlack",
+        "Code",
+        "SourceSans",
+        "SourceSansBold",
+        "SourceSansSemibold",
+        "Cartoon",
+        "Fantasy",
+        "Antique",
+        "Bodoni",
+        "Garamond",
+        "Arial",
+        "ArialBold",
+        "SciFi",
+        "Arcade",
+        "Bangers",
+        "Creepster",
+        "DenkOne",
+        "Fondamento",
+        "FredokaOne",
+        "GrenzeGotisch",
+        "IndieFlower",
+        "JosefinSans",
+        "Jura",
+        "Kalam",
+        "LuckiestGuy",
+        "Merriweather",
+        "Michroma",
+        "Nunito",
+        "Oswald",
+        "PatrickHand",
+        "PermanentMarker",
+        "Roboto",
+        "RobotoCondensed",
+        "Sarpanch",
+        "SpecialElite",
+        "TitilliumWeb",
+        "Ubuntu",
+    }
+
+    local function GetFontEnum(name)
+        return Enum.Font[name] or Enum.Font.RobotoMono
+    end
+
     local function ApplyPlayerVisuals(player)
-        if player == game.Players.LocalPlayer then return end
-        
+        if player == LocalPlayer_V then return end
+
         local tracerLine = Drawing.new("Line")
         tracerLine.Thickness = 1
         tracerLine.Transparency = 1
 
-        game:GetService("RunService").RenderStepped:Connect(function()
+        RunService_V.RenderStepped:Connect(function()
             local char = player.Character
-            if not char or not char:FindFirstChild("HumanoidRootPart") then 
+            if not char or not char:FindFirstChild("HumanoidRootPart") then
                 tracerLine.Visible = false
-                return 
+                return
             end
-            
+
             local hrp = char.HumanoidRootPart
             local hum = char:FindFirstChildOfClass("Humanoid")
-            local localHrp = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-            local vector, onScreen = workspace.CurrentCamera:WorldToViewportPoint(hrp.Position)
+            local localChar = LocalPlayer_V.Character
+            local localHrp = localChar and localChar:FindFirstChild("HumanoidRootPart")
+            local cam = workspace.CurrentCamera
+            local vector, onScreen = cam:WorldToViewportPoint(hrp.Position)
 
-            -- --- TRACERS LOGIC ---
+            -- === TRACERS ===
             if ESP_Settings.Enabled and ESP_Settings.Tracers and onScreen then
-                tracerLine.From = Vector2.new(workspace.CurrentCamera.ViewportSize.X / 2, workspace.CurrentCamera.ViewportSize.Y)
+                tracerLine.From = Vector2.new(cam.ViewportSize.X / 2, cam.ViewportSize.Y)
                 tracerLine.To = Vector2.new(vector.X, vector.Y)
                 tracerLine.Color = ESP_Settings.TracerColor
                 tracerLine.Visible = true
@@ -2579,23 +2918,39 @@ do
                 tracerLine.Visible = false
             end
 
-            -- --- ESP LOGIC (MODEL / BOX / SQUARE) ---
-            local highlight = char:FindFirstChild("MuminekHighlight") or Instance.new("Highlight", char)
-            highlight.Name = "MuminekHighlight"
+            -- === HIGHLIGHT (Model / Box) ===
+            local highlight = char:FindFirstChild("MuminekHighlight")
+            if not highlight then
+                highlight = Instance.new("Highlight")
+                highlight.Name = "MuminekHighlight"
+                highlight.Parent = char
+            end
             highlight.OutlineColor = ESP_Settings.Color
             highlight.FillColor = ESP_Settings.Color
-            
-            local square = char:FindFirstChild("MuminekSquare") or Instance.new("BillboardGui", char)
-            square.Name = "MuminekSquare"
-            square.AlwaysOnTop = true
-            square.Size = UDim2.new(4.5, 0, 6, 0)
-            square.Adornee = hrp
-            local sFrame = square:FindFirstChild("Frame") or Instance.new("Frame", square)
-            sFrame.Size = UDim2.new(1, 0, 1, 0)
-            sFrame.BackgroundTransparency = 1
-            local stroke = sFrame:FindFirstChild("UIStroke") or Instance.new("UIStroke", sFrame)
-            stroke.Thickness = 2
-            stroke.Color = ESP_Settings.Color
+
+            -- === SQUARE ESP ===
+            local square = char:FindFirstChild("MuminekSquare")
+            if not square then
+                square = Instance.new("BillboardGui")
+                square.Name = "MuminekSquare"
+                square.AlwaysOnTop = true
+                square.Size = UDim2.new(4.5, 0, 6, 0)
+                square.Adornee = hrp
+                square.Parent = char
+
+                local sFrame = Instance.new("Frame", square)
+                sFrame.Size = UDim2.new(1, 0, 1, 0)
+                sFrame.BackgroundTransparency = 1
+
+                local stroke = Instance.new("UIStroke", sFrame)
+                stroke.Thickness = 2
+            end
+
+            local sFrame = square:FindFirstChildWhichIsA("Frame")
+            local stroke = sFrame and sFrame:FindFirstChildWhichIsA("UIStroke")
+            if stroke then
+                stroke.Color = ESP_Settings.Color
+            end
 
             if ESP_Settings.Enabled then
                 highlight.Enabled = (ESP_Settings.Type == "Model" or ESP_Settings.Type == "Box")
@@ -2606,22 +2961,34 @@ do
                 square.Enabled = false
             end
 
-            -- --- TEXT LOGIC (Names, HP, Dist) ---
-            local bill = char:FindFirstChild("MuminekBill") or Instance.new("BillboardGui", char)
-            bill.Name = "MuminekBill"
-            bill.AlwaysOnTop = true
-            bill.Size = UDim2.new(0, 200, 0, 60)
-            bill.Adornee = char:FindFirstChild("Head") or hrp
+            -- === TEXT (Names, HP, Distance) ===
+            local bill = char:FindFirstChild("MuminekBill")
+            if not bill then
+                bill = Instance.new("BillboardGui")
+                bill.Name = "MuminekBill"
+                bill.AlwaysOnTop = true
+                bill.Size = UDim2.new(0, 200, 0, 60)
+                bill.Adornee = char:FindFirstChild("Head") or hrp
+                bill.Parent = char
+            end
             bill.Enabled = ESP_Settings.Enabled
-            
-            local label = bill:FindFirstChild("TextLabel") or Instance.new("TextLabel", bill)
-            label.BackgroundTransparency = 1
-            label.Size = UDim2.new(1, 0, 1, 0)
+
+            local label = bill:FindFirstChildWhichIsA("TextLabel")
+            if not label then
+                label = Instance.new("TextLabel", bill)
+                label.BackgroundTransparency = 1
+                label.Size = UDim2.new(1, 0, 1, 0)
+                label.TextStrokeTransparency = 1
+                label.TextXAlignment = Enum.TextXAlignment.Center
+            end
+
+            -- Zastosuj ustawienia tekstu
             label.TextColor3 = ESP_Settings.Color
-            label.TextStrokeTransparency = 0
-            label.Font = Enum.Font.RobotoMono
-            label.TextSize = 14
-            
+            label.Font = GetFontEnum(ESP_Settings.Font)
+            label.TextSize = ESP_Settings.TextSize
+            label.TextTransparency = ESP_Settings.TextTransparency
+            label.TextStrokeTransparency = ESP_Settings.TextOutline and 0 or 1
+
             local content = ""
             if ESP_Settings.Names then content = content .. player.Name .. "\n" end
             if ESP_Settings.Health and hum then content = content .. "HP: " .. math.floor(hum.Health) .. " " end
@@ -2631,20 +2998,26 @@ do
             end
             label.Text = content
 
-            -- --- RING LOGIC (ANIMOWANY) ---
-            local ringPart = char:FindFirstChild("MuminekRingPart") or Instance.new("Part", char)
-            if ringPart.Name ~= "MuminekRingPart" then
+            -- === RING (bez duplikatu) ===
+            local ringPart = char:FindFirstChild("MuminekRingPart")
+            if not ringPart then
+                ringPart = Instance.new("Part")
                 ringPart.Name = "MuminekRingPart"
                 ringPart.Transparency = 1
                 ringPart.CanCollide = false
-                
+                ringPart.Anchored = false
+                ringPart.Massless = true
+                ringPart.Size = Vector3.new(0.1, 0.1, 0.1)
+                ringPart.Parent = char
+
                 local cylinder = Instance.new("CylinderHandleAdornment", ringPart)
                 cylinder.Name = "MuminekRing"
-                cylinder.Height = 0.1
                 cylinder.Adornee = ringPart
-                
+                cylinder.Height = Ring_Settings.Height
+                cylinder.Angle = 360
+
                 local weld = Instance.new("Weld", ringPart)
-                weld.Name = "RingWeld" -- Nazywamy welda, żeby go potem łatwo znaleźć
+                weld.Name = "RingWeld"
                 weld.Part0 = hrp
                 weld.Part1 = ringPart
             end
@@ -2655,93 +3028,135 @@ do
             if activeRing and ringWeld then
                 activeRing.Visible = Ring_Settings.Enabled
                 activeRing.Radius = Ring_Settings.Radius
-                activeRing.InnerRadius = Ring_Settings.Radius - 0.2
+                activeRing.InnerRadius = Ring_Settings.Radius - Ring_Settings.Thickness
                 activeRing.Color3 = Ring_Settings.Color
-                
-                -- LOGIKA ANIMACJI:
+                activeRing.Height = Ring_Settings.Height
+
                 if Ring_Settings.Animate then
-                    -- math.sin sprawia, że kółko płynnie faluje
                     ringWeld.C0 = CFrame.new(0, -3.2 + (math.sin(tick() * 4) * 3.5) + 3.5, 0) * CFrame.Angles(math.rad(90), 0, 0)
                 else
-                    -- Stała pozycja pod stopami
                     ringWeld.C0 = CFrame.new(0, -3.2, 0) * CFrame.Angles(math.rad(90), 0, 0)
                 end
-            end
-            
-            local ringPart = char:FindFirstChild("MuminekRingPart") or Instance.new("Part", char)
-            if ringPart.Name ~= "MuminekRingPart" then
-                ringPart.Name = "MuminekRingPart"
-                ringPart.Transparency = 1
-                ringPart.CanCollide = false
-                local cylinder = Instance.new("CylinderHandleAdornment", ringPart)
-                cylinder.Name = "MuminekRing"
-                cylinder.Adornee = ringPart
-                cylinder.Height = 0.1
-                local weld = Instance.new("Weld", ringPart)
-                weld.Part0 = hrp
-                weld.Part1 = ringPart
-                weld.C0 = CFrame.new(0, -3.2, 0) * CFrame.Angles(math.rad(90), 0, 0)
-            end
-            local activeRing = ringPart:FindFirstChild("MuminekRing")
-            if activeRing then
-                activeRing.Visible = Ring_Settings.Enabled
-                activeRing.Radius = Ring_Settings.Radius
-                activeRing.InnerRadius = Ring_Settings.Radius - 0.2
-                activeRing.Color3 = Ring_Settings.Color
             end
         end)
     end
 
-    -- --- UI INTERFEJS (PLAYER ESP) ---
+    -- --- UI: PLAYER ESP ---
     local EspLabel = PlayerEspSection:AddLabel('Player ESP')
-    EspLabel:AddToggle({ 
-        Default = false, 
-        Flag = "p_esp_final", 
-        Callback = function(v) 
-            ESP_Settings.Enabled = v 
-            if v then
-                Logging.new("eye", "Player ESP Enabled", 3)
-            else
-                Logging.new("eye", "Player ESP Disabled", 3)
+    EspLabel:AddToggle({
+        Default = false,
+        Flag = "p_esp_final",
+        Callback = function(v)
+            ESP_Settings.Enabled = v
+            if Logging and Logging.new then
+                Logging.new("eye", "Player ESP " .. (v and "ON" or "OFF"), 3)
             end
-        end 
+        end
     })
 
     local eOpt = EspLabel:AddOption()
-    eOpt:AddLabel('Type'):AddDropdown({ Default = 'Model', Values = {'Model', 'Box', 'Square'}, Callback = function(v) ESP_Settings.Type = v end })
-    eOpt:AddLabel('Names'):AddToggle({ Callback = function(v) ESP_Settings.Names = v end })
-    eOpt:AddLabel('Health'):AddToggle({ Callback = function(v) ESP_Settings.Health = v end })
-    eOpt:AddLabel('Distance'):AddToggle({ Callback = function(v) ESP_Settings.Distance = v end })
-    eOpt:AddLabel('Tracers'):AddToggle({ Callback = function(v) ESP_Settings.Tracers = v end })
-    eOpt:AddLabel('ESP Color'):AddColorPicker({ Default = Color3.new(1,1,1), Callback = function(v) ESP_Settings.Color = v end })
-    eOpt:AddLabel('Tracer Color'):AddColorPicker({ Default = Color3.new(1,1,1), Callback = function(v) ESP_Settings.TracerColor = v end })
+    eOpt:AddLabel('Type'):AddDropdown({
+        Default = 'Model',
+        Values = {'Model', 'Box', 'Square'},
+        Flag = "ESP_Type",
+        Callback = function(v) ESP_Settings.Type = v end
+    })
+    eOpt:AddLabel('Names'):AddToggle({
+        Flag = "ESP_Names",
+        Callback = function(v) ESP_Settings.Names = v end
+    })
+    eOpt:AddLabel('Health'):AddToggle({
+        Flag = "ESP_Health",
+        Callback = function(v) ESP_Settings.Health = v end
+    })
+    eOpt:AddLabel('Distance'):AddToggle({
+        Flag = "ESP_Distance",
+        Callback = function(v) ESP_Settings.Distance = v end
+    })
+    eOpt:AddLabel('Tracers'):AddToggle({
+        Flag = "ESP_Tracers",
+        Callback = function(v) ESP_Settings.Tracers = v end
+    })
+    eOpt:AddLabel('ESP Color'):AddColorPicker({
+        Default = Color3.new(1, 1, 1),
+        Flag = "ESP_Color",
+        Callback = function(v) ESP_Settings.Color = v end
+    })
+    eOpt:AddLabel('Tracer Color'):AddColorPicker({
+        Default = Color3.new(1, 1, 1),
+        Flag = "ESP_TracerColor",
+        Callback = function(v) ESP_Settings.TracerColor = v end
+    })
 
-    -- --- UI INTERFEJS (RINGS) ---
+    -- === CZCIONKA ===
+    eOpt:AddLabel('Czcionka'):AddDropdown({
+        Default = 'RobotoMono',
+        Values = FONT_OPTIONS,
+        Flag = "ESP_Font",
+        Callback = function(v) ESP_Settings.Font = v end
+    })
+
+    eOpt:AddLabel('Rozmiar'):AddSlider({
+        Min = 8, Max = 32, Default = 14, Rounding = 0,
+        Flag = "ESP_TextSize",
+        Callback = function(v) ESP_Settings.TextSize = v end
+    })
+
+    eOpt:AddLabel('Outline'):AddToggle({
+        Default = true,
+        Flag = "ESP_TextOutline",
+        Callback = function(v) ESP_Settings.TextOutline = v end
+    })
+
+    eOpt:AddLabel('Przezroczystosc'):AddSlider({
+        Min = 0, Max = 1, Default = 0, Precision = 2,
+        Flag = "ESP_TextTransparency",
+        Callback = function(v) ESP_Settings.TextTransparency = v end
+    })
+
+    -- --- UI: RINGS ---
     local RingLabel = PlayerEspSection:AddLabel('Show Player Rings')
-    RingLabel:AddToggle({ 
-        Default = false, 
-        Flag = "p_ring_final", 
-        Callback = function(v) 
-            Ring_Settings.Enabled = v 
-            if v then
-                Logging.new("person", "Player Rings Enabled", 3)
-            else
-                Logging.new("person", "Player Rings Disabled", 3)
+    RingLabel:AddToggle({
+        Default = false,
+        Flag = "p_ring_final",
+        Callback = function(v)
+            Ring_Settings.Enabled = v
+            if Logging and Logging.new then
+                Logging.new("person", "Player Rings " .. (v and "ON" or "OFF"), 3)
             end
-        end 
+        end
     })
 
     local rOpt = RingLabel:AddOption()
-    rOpt:AddLabel('Size'):AddSlider({ Min = 2, Max = 10, Default = 4, Callback = function(v) Ring_Settings.Radius = v end })
-    rOpt:AddLabel('Color'):AddColorPicker({ Default = Color3.fromRGB(0, 255, 255), Callback = function(v) Ring_Settings.Color = v end })
-    rOpt:AddLabel('Animate'):AddToggle({ 
-        Default = true, 
-        Callback = function(v) Ring_Settings.Animate = v end 
+    rOpt:AddLabel('Size'):AddSlider({
+        Min = 2, Max = 10, Default = 4, Rounding = 1,
+        Flag = "Ring_Size",
+        Callback = function(v) Ring_Settings.Radius = v end
+    })
+    rOpt:AddLabel('Grubosc'):AddSlider({
+        Min = 0.05, Max = 1, Default = 0.2, Precision = 2,
+        Flag = "Ring_Thickness",
+        Callback = function(v) Ring_Settings.Thickness = v end
+    })
+    rOpt:AddLabel('Wysokosc'):AddSlider({
+        Min = 0.05, Max = 1, Default = 0.1, Precision = 2,
+        Flag = "Ring_Height",
+        Callback = function(v) Ring_Settings.Height = v end
+    })
+    rOpt:AddLabel('Color'):AddColorPicker({
+        Default = Color3.fromRGB(0, 255, 255),
+        Flag = "Ring_Color",
+        Callback = function(v) Ring_Settings.Color = v end
+    })
+    rOpt:AddLabel('Animate'):AddToggle({
+        Default = true,
+        Flag = "Ring_Animate",
+        Callback = function(v) Ring_Settings.Animate = v end
     })
 
     -- --- START ---
-    for _, p in pairs(game.Players:GetPlayers()) do ApplyPlayerVisuals(p) end
-    game.Players.PlayerAdded:Connect(ApplyPlayerVisuals)
+    for _, p in pairs(Players_Service:GetPlayers()) do ApplyPlayerVisuals(p) end
+    Players_Service.PlayerAdded:Connect(ApplyPlayerVisuals)
 
     -- ----------------------------------------
     --        JOIN & LEAVE LOGGER (Z IKONAMI)
@@ -6585,11 +7000,343 @@ do
         })
     end
 
+-- ----------------------------------------
+--  ANTI-FLING (ochrona przed wyrzuceniem)
+-- ----------------------------------------
+do
+    local RunService     = game:GetService("RunService")
+    local Players        = game:GetService("Players")
+    local LocalPlayer    = Players.LocalPlayer
+
+    -- == Konfiguracja ==
+    local settings = {
+        enabled          = false,
+        strength         = 500,      -- siła przeciwstawienia (BodyVelocity.MaxForce)
+        maxVelocity      = 100,      -- max prędkość zanim zostanie zresetowana
+        removeForeign    = true,     -- usuń obce BodyMovers
+        removeWelds      = true,     -- usuń obce weldy
+        anchorOnFling    = true,     -- kotwicz HRP gdy wykryto fling
+        anchorDuration   = 0.15,     -- jak długo trzymać zakotwiczenie (sekundy)
+        resetVelocity    = true,     -- resetuj Velocity po wykryciu
+        notifyOnDetect   = false,    -- powiadomienie gdy wykryto fling
+    }
+
+    local activeConnection  = nil
+    local bodyVelocity      = nil
+    local bodyGyro          = nil
+    local isAnchoring       = false
+
+    -- == Pomocnicze: reset HRP ==
+    local function resetHRP(hrp)
+        if not hrp or not hrp.Parent then return end
+
+        if settings.resetVelocity then
+            pcall(function()
+                hrp.AssemblyLinearVelocity  = Vector3.zero
+                hrp.AssemblyAngularVelocity = Vector3.zero
+                hrp.Velocity                = Vector3.zero
+                hrp.RotVelocity             = Vector3.zero
+            end)
+        end
+
+        if settings.anchorOnFling and not isAnchoring then
+            isAnchoring = true
+            local wasAnchored = hrp.Anchored
+            hrp.Anchored = true
+            task.delay(settings.anchorDuration, function()
+                if hrp and hrp.Parent then
+                    hrp.Anchored = wasAnchored
+                end
+                isAnchoring = false
+            end)
+        end
+    end
+
+    -- == Pomocnicze: usuń obce BodyMovers ==
+    local function cleanForeignBodyMovers(char)
+        if not settings.removeForeign or not char then return end
+        for _, obj in ipairs(char:GetDescendants()) do
+            if obj:IsA("BodyVelocity")
+            or obj:IsA("BodyGyro")
+            or obj:IsA("BodyAngularVelocity")
+            or obj:IsA("BodyForce")
+            or obj:IsA("BodyPosition")
+            or obj:IsA("BodyThrust")
+            or obj:IsA("RocketPropulsion")
+            or obj:IsA("AngularVelocity")
+            or obj:IsA("LinearVelocity")
+            or obj:IsA("VectorForce")
+            or obj:IsA("AlignPosition")
+            or obj:IsA("AlignOrientation")
+            then
+                -- Pomiń własne (oznaczone tagiem)
+                if obj:GetAttribute("MuminekOwned") then continue end
+                pcall(function() obj:Destroy() end)
+            end
+        end
+    end
+
+    -- == Pomocnicze: usuń obce weldy ==
+    local function cleanForeignWelds(char)
+        if not settings.removeWelds or not char then return end
+        for _, obj in ipairs(char:GetDescendants()) do
+            if obj:IsA("Weld")
+            or obj:IsA("WeldConstraint")
+            or obj:IsA("ManualWeld")
+            or obj:IsA("Motor6D")
+            then
+                if obj:GetAttribute("MuminekOwned") then continue end
+
+                -- Zachowaj oryginalne Motor6D postaci (R6/R15)
+                local parent = obj.Parent
+                if obj:IsA("Motor6D") then
+                    -- Motor6D w Torso/UpperTorso to oryginalne stawy postaci
+                    local validParent = parent and (
+                        parent.Name == "Torso"
+                        or parent.Name == "UpperTorso"
+                        or parent.Name == "LowerTorso"
+                        or parent.Name == "Head"
+                        or parent.Name:find("Arm")
+                        or parent.Name:find("Leg")
+                    )
+                    if validParent then continue end
+                end
+
+                -- Weld/Motor6D które nie są częścią oryginalnej postaci
+                local part0 = obj:IsA("WeldConstraint") and obj.Part0 or obj.Part0
+                local part1 = obj:IsA("WeldConstraint") and obj.Part1 or obj.Part1
+
+                -- Jeśli weld łączy naszą postać z obcym obiektem → usuń
+                if part0 and part1 then
+                    local p0InChar = part0:IsDescendantOf(char)
+                    local p1InChar = part1:IsDescendantOf(char)
+                    local p0InWS  = part0:IsDescendantOf(workspace)
+                    local p1InWS  = part1:IsDescendantOf(workspace)
+
+                    -- Jeden w postaci, drugi poza → podejrzany
+                    if (p0InChar and not p1InChar) or (p1InChar and not p0InChar) then
+                        pcall(function() obj:Destroy() end)
+                    end
+                end
+            end
+        end
+    end
+
+    -- == Główny setup (przy włączeniu) ==
+    local function setupAntiFling()
+        local char = LocalPlayer.Character
+        if not char then return end
+        local hrp = char:FindFirstChild("HumanoidRootPart")
+        if not hrp then return end
+
+        -- Usuń stare jeśli istnieją
+        if bodyVelocity then pcall(function() bodyVelocity:Destroy() end) bodyVelocity = nil end
+        if bodyGyro     then pcall(function() bodyGyro:Destroy() end)     bodyGyro = nil end
+
+        -- BodyVelocity przeciw fling
+        bodyVelocity = Instance.new("BodyVelocity")
+        bodyVelocity.Name = "Muminek_AntiFling_Velocity"
+        bodyVelocity:SetAttribute("MuminekOwned", true)
+        bodyVelocity.MaxForce = Vector3.new(settings.strength, settings.strength, settings.strength)
+        bodyVelocity.Velocity = Vector3.zero
+        bodyVelocity.P = 1250
+        bodyVelocity.Parent = hrp
+
+        -- BodyGyro przeciw rotacji fling
+        bodyGyro = Instance.new("BodyGyro")
+        bodyGyro.Name = "Muminek_AntiFling_Gyro"
+        bodyGyro:SetAttribute("MuminekOwned", true)
+        bodyGyro.MaxTorque = Vector3.new(settings.strength, settings.strength, settings.strength) * 10
+        bodyGyro.P = 3000
+        bodyGyro.D = 500
+        bodyGyro.CFrame = hrp.CFrame
+        bodyGyro.Parent = hrp
+
+        -- Wstępne czyszczenie
+        cleanForeignBodyMovers(char)
+        cleanForeignWelds(char)
+    end
+
+    -- == Cleanup (przy wyłączeniu) ==
+    local function teardownAntiFling()
+        if bodyVelocity then pcall(function() bodyVelocity:Destroy() end) bodyVelocity = nil end
+        if bodyGyro     then pcall(function() bodyGyro:Destroy() end)     bodyGyro = nil end
+        if activeConnection then
+            activeConnection:Disconnect()
+            activeConnection = nil
+        end
+    end
+
+    -- == Główna pętla ==
+    local function startLoop()
+        if activeConnection then
+            activeConnection:Disconnect()
+        end
+
+        activeConnection = RunService.Heartbeat:Connect(function(dt)
+            if not settings.enabled then return end
+
+            local char = LocalPlayer.Character
+            if not char then return end
+            local hrp = char:FindFirstChild("HumanoidRootPart")
+            if not hrp then return end
+
+            -- Upewnij się że BodyMovers istnieją
+            if not bodyVelocity or not bodyVelocity.Parent then
+                bodyVelocity = Instance.new("BodyVelocity")
+                bodyVelocity.Name = "Muminek_AntiFling_Velocity"
+                bodyVelocity:SetAttribute("MuminekOwned", true)
+                bodyVelocity.MaxForce = Vector3.new(settings.strength, settings.strength, settings.strength)
+                bodyVelocity.Velocity = Vector3.zero
+                bodyVelocity.P = 1250
+                bodyVelocity.Parent = hrp
+            end
+
+            if not bodyGyro or not bodyGyro.Parent then
+                bodyGyro = Instance.new("BodyGyro")
+                bodyGyro.Name = "Muminek_AntiFling_Gyro"
+                bodyGyro:SetAttribute("MuminekOwned", true)
+                bodyGyro.MaxTorque = Vector3.new(settings.strength, settings.strength, settings.strength) * 10
+                bodyGyro.P = 3000
+                bodyGyro.D = 500
+                bodyGyro.CFrame = hrp.CFrame
+                bodyGyro.Parent = hrp
+            end
+
+            -- Aktualizuj siłę na bieżąco
+            bodyVelocity.MaxForce = Vector3.new(settings.strength, settings.strength, settings.strength)
+            bodyGyro.MaxTorque    = Vector3.new(settings.strength, settings.strength, settings.strength) * 10
+
+            -- Wykryj nadmierną prędkość (fling)
+            local vel = hrp.AssemblyLinearVelocity
+            local speed = vel.Magnitude
+
+            if speed > settings.maxVelocity then
+                -- Reset HRP
+                resetHRP(hrp)
+
+                if settings.notifyOnDetect and Logging and Logging.new then
+                    Logging.new("shield-lock", "Anti-Fling: wykryto fling (speed: " .. math.floor(speed) .. ")", 3)
+                end
+            end
+
+            -- Ciągłe czyszczenie obcych obiektów (co klatkę jest OK — tanie)
+            cleanForeignBodyMovers(char)
+            cleanForeignWelds(char)
+
+            -- Utrzymuj zerową prędkość przy braku ruchu gracza
+            -- (BodyVelocity i tak trzyma, ale dla pewności)
+        end)
+    end
+
+    -- == UI ==
+    local AFLabel = PlayerSection:AddLabel('Anti-Fling')
+    local AFToggle = AFLabel:AddToggle({
+        Default = false,
+        Flag = "AntiFling_Player",
+        Callback = function(v)
+            settings.enabled = v
+            if v then
+                setupAntiFling()
+                startLoop()
+                if Logging and Logging.new then
+                    Logging.new("shield-lock", "Anti-Fling włączony", 3)
+                end
+                if Notification and Notification.new then
+                    Notification.new({
+                        Title   = "Anti-Fling",
+                        Content = "Ochrona przed flingiem aktywna.",
+                        Duration = 3,
+                    })
+                end
+            else
+                teardownAntiFling()
+                if Logging and Logging.new then
+                    Logging.new("shield-lock", "Anti-Fling wyłączony", 3)
+                end
+            end
+        end
+    })
+
+    AFLabel:ToolTip("Chroni przed flingiem (wyrzuceniem postaci przez exploiterów).\nUsuwa obce BodyMovers, weldy i resetuje nadmierną prędkość.")
+
+    -- == Opcje zaawansowane ==
+    local AFOpt = AFLabel:AddOption()
+
+    AFOpt:AddLabel('Siła'):AddSlider({
+        Min = 100, Max = 5000, Default = 500, Rounding = 0,
+        Flag = "AntiFling_Strength",
+        Callback = function(v)
+            settings.strength = v
+            if bodyVelocity then
+                bodyVelocity.MaxForce = Vector3.new(v, v, v)
+            end
+            if bodyGyro then
+                bodyGyro.MaxTorque = Vector3.new(v, v, v) * 10
+            end
+        end
+    })
+
+    AFOpt:AddLabel('Max prędkość'):AddSlider({
+        Min = 20, Max = 500, Default = 100, Rounding = 0,
+        Flag = "AntiFling_MaxVel",
+        Callback = function(v) settings.maxVelocity = v end
+    })
+
+    AFOpt:AddLabel('Usuwaj obce BodyMovers'):AddToggle({
+        Default = true,
+        Flag = "AntiFling_RemoveBodyMovers",
+        Callback = function(v) settings.removeForeign = v end
+    })
+
+    AFOpt:AddLabel('Usuwaj obce weldy'):AddToggle({
+        Default = true,
+        Flag = "AntiFling_RemoveWelds",
+        Callback = function(v) settings.removeWelds = v end
+    })
+
+    AFOpt:AddLabel('Kotwicz HRP'):AddToggle({
+        Default = true,
+        Flag = "AntiFling_Anchor",
+        Callback = function(v) settings.anchorOnFling = v end
+    })
+
+    AFOpt:AddLabel('Resetuj Velocity'):AddToggle({
+        Default = true,
+        Flag = "AntiFling_ResetVelocity",
+        Callback = function(v) settings.resetVelocity = v end
+    })
+
+    AFOpt:AddLabel('Powiadamiaj o flingu'):AddToggle({
+        Default = false,
+        Flag = "AntiFling_Notify",
+        Callback = function(v) settings.notifyOnDetect = v end
+    })
+
+    AFOpt:AddLabel('Czas kotwiczenia (s)'):AddSlider({
+        Min = 0.05, Max = 1.0, Default = 0.15, Precision = 2,
+        Flag = "AntiFling_AnchorDuration",
+        Callback = function(v) settings.anchorDuration = v end
+    })
+
+    -- == Reset przy respawnie ==
+    LocalPlayer.CharacterAdded:Connect(function()
+        if settings.enabled then
+            task.wait(0.5)
+            setupAntiFling()
+            startLoop()
+        end
+    end)
+
+    if DEBUG_MODE and Logging and Logging.new then
+        Logging.new("shield-lock", "Anti-Fling załadowany", 3)
+    end
+end
+
     -- ----------------------------------------
     --  7. FIX CAMERA (reset kamery)
     -- ----------------------------------------
     do
-        PlayerSection:AddLabel('Fix Camera')
 
         PlayerSection:AddButton({
             Name = "Fix Camera",
@@ -6636,8 +7383,6 @@ do
 
 
     end
-
--- Wolne
 
 end
 
