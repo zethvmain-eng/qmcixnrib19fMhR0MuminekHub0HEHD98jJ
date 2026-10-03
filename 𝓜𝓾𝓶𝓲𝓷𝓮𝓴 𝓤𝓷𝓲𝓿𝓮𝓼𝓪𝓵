@@ -252,8 +252,8 @@ end
     -- == Rangi - Przez HWID (GeyHwid) == --
     do
     local AUTHORIZED_HWIDS = {
-        ["7b62623764373837392d336138642d313166312d626132612d3830366536663665363936337d"]  = "Owner", -- Owner
-        ["TWOJE_HWID_PREMIUM"] = "Premium", -- Premium
+        ["7b62623764373837392d336138642d313166312d626132612d3830366536663665363936337d"]  = "Owner",  -- Owner | Ja
+        ["7b62623764373837392d336138642d313166312d626132612d3830366536663665363936337d"] = "Premium", -- Premium | Szymon
     }
 
     -- Domyślne wartości
@@ -541,17 +541,7 @@ end
             end end,
         })
 
-    -- == Kolory == --
-    do
-        window.UserSettings:AddLabel("Kolor"):AddColorPicker({
-            Default = Color3.fromRGB(78, 127, 252),
-            Flag = "KolorMenu",
-            Callback = function(color)
-                MuminekHub.AccentColor = color
-            end
-        })
-    end
-
+    -- == Pozycja Watermarku == --
     window.UserSettings:AddLabel("Watermark"):AddDropdown({
         Default = "TopRight",
         Values = {
@@ -567,6 +557,17 @@ end
             end
         end
     })
+
+    -- == Kolory == --
+    do
+        window.UserSettings:AddLabel("Kolor"):AddColorPicker({
+            Default = Color3.fromRGB(78, 127, 252),
+            Flag = "KolorMenu",
+            Callback = function(color)
+                MuminekHub.AccentColor = color
+            end
+        })
+    end
 
     -- == Safe Mode == --
     window.UserSettings:AddButton({
