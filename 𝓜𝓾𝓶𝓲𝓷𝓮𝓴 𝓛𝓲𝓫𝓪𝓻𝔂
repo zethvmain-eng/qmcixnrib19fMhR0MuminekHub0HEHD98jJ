@@ -6891,6 +6891,9 @@ function NeverLose:CreateHotkeys()
         BlurSignal    = nil,
         Shadow        = nil,
         Config        = CONFIG,
+        Draggable     = true,
+        DragConnection = nil,
+        ToggleButtons = {},
     }
 
     -- === RAMKA ===
@@ -6955,6 +6958,8 @@ function NeverLose:CreateHotkeys()
         for _, child in pairs(HotkeysFrame:GetChildren()) do
             if child:IsA("Frame") and child:FindFirstChildWhichIsA("TextLabel") then
                 rows = rows + 1
+            elseif child:IsA("TextButton") then
+                rows = rows + 1
             end
         end
         local totalHeight = (rows * CONFIG.RowHeight)
@@ -7016,6 +7021,51 @@ function NeverLose:CreateHotkeys()
 
         return Row, IconLabel, NameLabel, KeyLabel
     end
+
+    -- ============================================================
+    --  DRAG (przesuwanie myszką)
+    -- ============================================================
+    local function setupDrag()
+        if HUD.DragConnection then
+            HUD.DragConnection:Disconnect()
+            HUD.DragConnection = nil
+        end
+
+        if not HUD.Draggable then return end
+
+        local dragging = false
+        local dragStart = nil
+        local startPos = nil
+
+        HUD.DragConnection = HotkeysFrame.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1
+            or input.UserInputType == Enum.UserInputType.Touch then
+                dragging = true
+                dragStart = input.Position
+                startPos = HotkeysFrame.Position
+
+                input.Changed:Connect(function()
+                    if input.UserInputState == Enum.UserInputState.End then
+                        dragging = false
+                    end
+                end)
+            end
+        end)
+
+        UserInputService.InputChanged:Connect(function(input)
+            if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement
+            or input.UserInputType == Enum.UserInputType.Touch) then
+                local delta = input.Position - dragStart
+                HotkeysFrame.Position = UDim2.new(
+                    startPos.X.Scale,
+                    startPos.X.Offset + delta.X,
+                    startPos.Y.Scale,
+                    startPos.Y.Offset + delta.Y
+                )
+            end
+        end)
+    end
+    setupDrag()
 
     -- === API ===
     function HUD:AddHotkey(config)
@@ -7102,7 +7152,6 @@ function NeverLose:CreateHotkeys()
         UIStroke.Transparency = t
     end
 
-    -- === AKTUALIZACJA KOLORU IKON Z ACCENTU ===
     function HUD:RefreshAccentColor()
         local newColor = NeverLose.AccentColor or Color3.fromRGB(78, 127, 252)
         for _, data in pairs(HUD.ActiveHotkeys) do
@@ -7111,7 +7160,6 @@ function NeverLose:CreateHotkeys()
     end
 
     function HUD:SetIconColor(color)
-        -- Ręczne nadpisanie (opcjonalne)
         CONFIG.IconColor = color
         for _, data in pairs(HUD.ActiveHotkeys) do
             data.icon.TextColor3 = color
@@ -7152,15 +7200,93 @@ function NeverLose:CreateHotkeys()
         updateFrameSize()
     end
 
+    -- ============================================================
+    --  NOWE API: Drag / Toggle / ToggleButton
+    -- ============================================================
+    function HUD:SetDraggable(value)
+        HUD.Draggable = value
+        setupDrag()
+    end
+
+    function HUD:Toggle()
+        HUD:SetVisible(not HotkeysFrame.Visible)
+    end
+
+    function HUD:AddToggleButton(config)
+        config = config or {}
+        if not config.Name then return nil end
+
+        local Btn = Instance.new("TextButton")
+        Btn.Name = NeverLose.RandomString()
+        Btn.Parent = HotkeysFrame
+        Btn.BackgroundTransparency = 1
+        Btn.Size = UDim2.new(1, 0, 0, CONFIG.RowHeight)
+        Btn.LayoutOrder = -(#HotkeysFrame:GetChildren() + 10)
+        Btn.Text = ""
+        Btn.ZIndex = 110
+
+        local IconLabel = Instance.new("TextLabel")
+        IconLabel.Parent = Btn
+        IconLabel.BackgroundTransparency = 1
+        IconLabel.Size = UDim2.new(0, CONFIG.IconSize + 6, 1, 0)
+        IconLabel.Position = UDim2.new(0, 0, 0, 0)
+        IconLabel.FontFace = NeverLose.BuiltInBold
+        IconLabel.Text = config.Icon or "x"
+        IconLabel.TextColor3 = config.Color or Color3.fromRGB(255, 100, 100)
+        IconLabel.TextSize = CONFIG.IconSize
+        IconLabel.TextXAlignment = Enum.TextXAlignment.Left
+        IconLabel.ZIndex = 111
+
+        local NameLabel = Instance.new("TextLabel")
+        NameLabel.Parent = Btn
+        NameLabel.BackgroundTransparency = 1
+        NameLabel.Size = UDim2.new(1, -(CONFIG.IconSize + 10), 1, 0)
+        NameLabel.Position = UDim2.new(0, CONFIG.IconSize + 6, 0, 0)
+        NameLabel.Font = Enum.Font.GothamBold
+        NameLabel.Text = config.Name or "Button"
+        NameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        NameLabel.TextSize = CONFIG.TextSize
+        NameLabel.TextXAlignment = Enum.TextXAlignment.Left
+        NameLabel.ZIndex = 111
+
+        Btn.MouseButton1Click:Connect(function()
+            if config.Callback then
+                pcall(config.Callback)
+            end
+        end)
+
+        Btn.MouseEnter:Connect(function()
+            NeverLose.PlayAnimate(NameLabel, SlowyTween, {
+                TextColor3 = NeverLose.AccentColor
+            })
+        end)
+
+        Btn.MouseLeave:Connect(function()
+            NeverLose.PlayAnimate(NameLabel, SlowyTween, {
+                TextColor3 = Color3.fromRGB(255, 255, 255)
+            })
+        end)
+
+        updateFrameSize()
+
+        table.insert(HUD.ToggleButtons, Btn)
+        return Btn
+    end
+
     function HUD:Destroy()
+        if HUD.DragConnection then
+            HUD.DragConnection:Disconnect()
+            HUD.DragConnection = nil
+        end
         if HUD.Shadow then pcall(function() HUD.Shadow:Render(false) end) end
         if HUD.BlurSignal then pcall(function() HUD.BlurSignal:SetValue(false) end) end
         HotkeysFrame:Destroy()
         HUD.ActiveHotkeys = {}
+        HUD.ToggleButtons = {}
         HUD.LayoutOrder = 0
     end
 
-    -- === AUTO-SYNC ACCENT (sprawdza co 0.5s czy zmieniono akcent) ===
+    -- === AUTO-SYNC ACCENT ===
     task.spawn(function()
         local lastAccent = NeverLose.AccentColor
         while HotkeysFrame and HotkeysFrame.Parent do
@@ -7172,7 +7298,6 @@ function NeverLose:CreateHotkeys()
         end
     end)
 
-    -- Cache
     NeverLose.__HotkeysCache = HUD
 
     return HUD
